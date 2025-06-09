@@ -6,14 +6,6 @@ import (
 	"net/http"
 )
 
-type ConflictError struct {
-	ShortLink string
-}
-
-func (e *ConflictError) Error() string {
-	return "link already exsists"
-}
-
 type Postgres struct {
 	DB *sql.DB
 }
@@ -36,7 +28,7 @@ func (l *Postgres) initStructForLinks() (err error) {
 	return err
 }
 
-func NewPostgresLinksStorage(conn string) (pgx *Postgres, err error) {
+func NewPostgresStorage(conn string) (pgx *Postgres, err error) {
 
 	pgx = &Postgres{}
 

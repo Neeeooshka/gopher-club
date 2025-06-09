@@ -19,12 +19,12 @@ import (
 func main() {
 
 	var err error
-	var store storage.Membership
+	var store storage.Storage
 
 	opt := getOptions()
 
 	if opt.DB.String() != "" {
-		store, err = postgres.NewPostgresLinksStorage(opt.DB.String())
+		store, err = postgres.NewPostgresStorage(opt.DB.String())
 		if err != nil {
 			panic(err)
 		}
