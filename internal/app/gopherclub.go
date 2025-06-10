@@ -30,7 +30,7 @@ func NewGopherClubAppInstance(opt config.Options, s storage.Storage) *gopherClub
 	ctx := &Ctx{Ctx: c, Cancel: cancel}
 
 	instance := &gopherClubApp{
-		UserService: users.NewUserService(ctx, s),
+		UserService: users.NewUserService(c, s),
 		Options:     opt,
 		ctx:         *ctx,
 		storage:     s,
