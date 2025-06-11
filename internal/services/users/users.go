@@ -15,11 +15,11 @@ type UserRepository interface {
 }
 
 type UserService struct {
+	Errors  []error
 	Inited  bool
+	User    User
 	storage UserRepository
 	ctx     context.Context
-	Errors  []error
-	User    User
 }
 
 func NewUserService(ctx context.Context, ur interface{}) UserService {
@@ -32,12 +32,13 @@ func NewUserService(ctx context.Context, ur interface{}) UserService {
 		us.Errors = append(us.Errors, fmt.Errorf("2th argument expected UserRepository, got %T", ur))
 	}
 
+	if len(us.Errors) > 0 {
+		return us
+	}
+
 	us.ctx = ctx
 	us.storage = userRepo
-
-	if len(us.Errors) == 0 {
-		us.Inited = true
-	}
+	us.Inited = true
 
 	return us
 }
@@ -138,10 +139,11 @@ func (u *UserService) Authorize(cr credentials) (string, error) {
 }
 
 type User struct {
-	ID          int    `db:"ID"`
-	Login       string `db:"login"`
-	Password    string `db:"password"`
-	Credentials string `db:"credentials"`
+	ID          int     `db:"ID"`
+	Login       string  `db:"login"`
+	Password    string  `db:"password"`
+	Credentials string  `db:"credentials"`
+	Balance     float64 `db:"balance"`
 }
 
 type ConflictUserError struct {
