@@ -21,15 +21,18 @@ const (
 
 type OrdersRepository interface {
 	AddOrder(string, int) error
-	ListOrders(context.Context, users.User) ([]Order, error)
+	ListOrders(context.Context) ([]Order, error)
+	ListUserOrders(context.Context, users.User) ([]Order, error)
+	UpdateOrders(context.Context, []Order) error
 }
 
 type OrdersService struct {
-	Inited      bool
-	storage     OrdersRepository
-	ctx         context.Context
-	Errors      []error
-	UserService *users.UserService
+	Errors         []error
+	Inited         bool
+	UserService    *users.UserService
+	ctx            context.Context
+	storage        OrdersRepository
+	updateInterval time.Duration
 }
 
 func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService) OrdersService {
@@ -52,6 +55,7 @@ func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService
 
 	os.ctx = ctx
 	os.storage = ordersRepo
+	os.updateInterval = time.Minute * 5
 	os.UserService = us
 	os.Inited = true
 
@@ -108,7 +112,7 @@ func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	orders, err := o.storage.ListOrders(o.ctx, o.UserService.User)
+	orders, err := o.storage.ListUserOrders(o.ctx, o.UserService.User)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -148,6 +152,12 @@ func (o *OrdersService) CheckLuhn(orderNumber string) bool {
 		sum += digit
 	}
 	return sum%10 == 0
+}
+
+func (o *OrdersService) updateOrders() {
+
+	_ = time.NewTicker(o.updateInterval)
+
 }
 
 type Order struct {
