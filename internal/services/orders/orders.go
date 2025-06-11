@@ -153,10 +153,10 @@ func (o *OrdersService) CheckLuhn(orderNumber string) bool {
 type Order struct {
 	ID         int       `db:"id"`
 	UserID     int       `db:"user_id"`
-	Number     string    `db:"number" json:"number"`
+	Number     string    `db:"num" json:"number"`
 	DateInsert time.Time `db:"date_insert" json:"uploaded_at"`
-	Accrual    int       `db:"accrual" json:"accrual,omitempty"`
-	Status     int       `db:"status" json:"status"`
+	Accrual    float64   `db:"accrual" json:"accrual,omitempty"`
+	Status     string    `db:"status" json:"status"`
 }
 
 type ConflictOrderError struct {
