@@ -1,31 +1,30 @@
 package postgres
 
-import "github.com/Neeeooshka/gopher-club/internal/users"
+import (
+	"github.com/Neeeooshka/gopher-club/internal/services/users"
+)
 
 func (l *Postgres) GetUserByLogin(login string) (users.User, error) {
 
 	var user users.User
 
 	row := l.DB.QueryRow("select * from gopher_users where login = $1", login)
+	err := row.Scan(&user)
+	if err != nil {
+		return user, err
+	}
+
+	row = l.DB.QueryRow("select * from gopher_user_options where user_id = $1", user.ID)
 
 	return user, row.Scan(&user)
 }
 
-func (l *Postgres) GetUserKey(ID int) (string, error) {
-
-	var key string
-
-	row := l.DB.QueryRow("select * from gopher_keys where ID = $1", ID)
-
-	return key, row.Scan(&key)
-}
-
-func (l *Postgres) AddUser(user users.User) error {
+func (l *Postgres) AddUser(user users.User, salt string) error {
 
 	var id int
 	var isNew bool
 
-	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_users (login, password, name)\n    VALUES ($1, $2, $3)\n    ON CONFLICT (login) DO NOTHING\n        RETURNING id\n)\nSELECT id, 1 as is_new FROM ins\nUNION  ALL\nSELECT id, 0 as is_new FROM gopher_users WHERE login = $1\nLIMIT 1", user.Login, user.Password.GetHash(), user.Name)
+	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_users (login, password)\n    VALUES ($1, $2)\n    ON CONFLICT (login) DO NOTHING\n        RETURNING id\n)\nSELECT id, 1 as is_new FROM ins\nUNION  ALL\nSELECT id, 0 as is_new FROM gopher_users WHERE login = $1\nLIMIT 1", user.Login, user.Password)
 	err := row.Scan(&id, &isNew)
 	if err != nil {
 		return err
@@ -35,5 +34,7 @@ func (l *Postgres) AddUser(user users.User) error {
 		return users.NewConflictUserError(id, user.Login)
 	}
 
-	return nil
+	_, err = l.DB.Exec("INSERT INTO gopher_user_options (user_id, credentials) VALUES ($1, $2)", id, salt)
+
+	return err
 }

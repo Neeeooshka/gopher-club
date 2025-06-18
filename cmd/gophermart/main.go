@@ -34,7 +34,7 @@ func main() {
 
 	defer store.Close()
 
-	appInstance := app.NewGopherClubAppInstance(opt, store)
+	app := app.NewGopherClubAppInstance(opt, store)
 
 	zapLoger, err := zap.NewZapLogger("info")
 	if err != nil {
@@ -42,15 +42,22 @@ func main() {
 	}
 
 	router := chi.NewRouter()
-	router.Post("/api/user/register", logger.IncludeLogger(compressor.IncludeCompressor(appInstance.RegisterUserHandler, gzip.NewGzipCompressor()), zapLoger))
-	router.Post("/api/user/login", logger.IncludeLogger(compressor.IncludeCompressor(appInstance.LoginUserHandler, gzip.NewGzipCompressor()), zapLoger))
-	router.Post("/api/user/orders", logger.IncludeLogger(compressor.IncludeCompressor(appInstance.AddUserOrderHandler, gzip.NewGzipCompressor()), zapLoger))
-	router.Get("/api/user/orders", logger.IncludeLogger(appInstance.GetUserOrdersHandler, zapLoger))
-	router.Get("/api/user/balance", logger.IncludeLogger(appInstance.GetUserBalanceHandler, zapLoger))
-	router.Post("/api/user/balance/withdraw", logger.IncludeLogger(compressor.IncludeCompressor(appInstance.WithdrawUserBalanceHandler, gzip.NewGzipCompressor()), zapLoger))
-	router.Get("/api/user/withdrawals", logger.IncludeLogger(appInstance.GetUserWithdrawals, zapLoger))
 
-	http.ListenAndServe(appInstance.Options.GetServer(), router)
+	if app.UserService.Inited {
+		router.Post("/api/user/register", logger.IncludeLogger(compressor.IncludeCompressor(app.UserService.RegisterUserHandler, gzip.NewGzipCompressor()), zapLoger))
+		router.Post("/api/user/login", logger.IncludeLogger(compressor.IncludeCompressor(app.UserService.LoginUserHandler, gzip.NewGzipCompressor()), zapLoger))
+	} else {
+		router.Post("/api/user/register", app.ServiceUnavialableHandler)
+		router.Post("/api/user/login", app.ServiceUnavialableHandler)
+	}
+
+	router.Get("/api/user/balance", logger.IncludeLogger(app.GetUserBalanceHandler, zapLoger))
+	router.Post("/api/user/orders", logger.IncludeLogger(compressor.IncludeCompressor(app.AddUserOrderHandler, gzip.NewGzipCompressor()), zapLoger))
+	router.Get("/api/user/orders", logger.IncludeLogger(app.GetUserOrdersHandler, zapLoger))
+	router.Post("/api/user/balance/withdraw", logger.IncludeLogger(compressor.IncludeCompressor(app.WithdrawUserBalanceHandler, gzip.NewGzipCompressor()), zapLoger))
+	router.Get("/api/user/withdrawals", logger.IncludeLogger(app.GetUserWithdrawals, zapLoger))
+
+	http.ListenAndServe(app.Options.GetServer(), router)
 }
 
 // init options
