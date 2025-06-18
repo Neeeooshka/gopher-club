@@ -71,7 +71,6 @@ func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		if errors.As(err, &ce) {
 			w.WriteHeader(http.StatusConflict)
-			fmt.Fprint(w, err.Error())
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
@@ -98,7 +97,7 @@ func (u *UserService) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := u.Authorize(cr)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
@@ -143,6 +142,19 @@ type User struct {
 	Login       string `db:"login"`
 	Password    string `db:"password"`
 	Credentials string `db:"credentials"`
+}
+
+type ConflictUserError struct {
+	ID    int
+	login string
+}
+
+func NewConflictUserError(ID int, login string) *ConflictUserError {
+	return &ConflictUserError{ID, login}
+}
+
+func (e *ConflictUserError) Error() string {
+	return "User with login " + e.login + " already exsists"
 }
 
 type credentials struct {
@@ -194,17 +206,4 @@ func (cr *credentials) verifyPassword(user User) error {
 	}
 
 	return nil
-}
-
-type ConflictUserError struct {
-	ID    int
-	login string
-}
-
-func NewConflictUserError(ID int, login string) *ConflictUserError {
-	return &ConflictUserError{ID, login}
-}
-
-func (e *ConflictUserError) Error() string {
-	return "User with login " + e.login + " already exsists"
 }
