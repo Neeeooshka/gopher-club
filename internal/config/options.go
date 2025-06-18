@@ -49,7 +49,7 @@ func (s *ServerAddress) Set(flag string) error {
 }
 
 type AccrualSystem struct {
-	URI *url.URL
+	URI url.URL
 }
 
 func (a *AccrualSystem) String() string {
@@ -64,7 +64,7 @@ func (a *AccrualSystem) Set(flag string) error {
 		return err
 	}
 
-	a.URI = as
+	a.URI = *as
 
 	return nil
 }
@@ -85,7 +85,7 @@ func (d *DB) Set(flag string) error {
 func NewOptions() Options {
 	return Options{
 		ServerAddress:  ServerAddress{Host: "localhost", Port: 8080},
-		AccrualAddress: AccrualSystem{&url.URL{Host: "localhost:8080", Scheme: "http"}},
+		AccrualAddress: AccrualSystem{url.URL{Host: "localhost:8080", Scheme: "http"}},
 		DB:             DB{},
 	}
 }

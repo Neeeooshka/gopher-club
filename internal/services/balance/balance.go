@@ -61,7 +61,7 @@ func NewBalanceService(ctx context.Context, or interface{}, us *users.UserServic
 func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Authorization")
-	err := b.UserService.Authenticate(token)
+	user, err := b.UserService.Authenticate(token)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -79,7 +79,7 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if b.UserService.User.Balance < withdraw.Sum {
+	if user.Balance < withdraw.Sum {
 		w.WriteHeader(http.StatusPaymentRequired)
 		return
 	}
@@ -90,7 +90,7 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 
 		if err != nil {
 			logger, _ := zap.NewZapLogger("debug")
-			logger.Debug(fmt.Sprintf("cannot withdraw balance for user %d", b.UserService.User.ID), logger.Error(err))
+			logger.Debug(fmt.Sprintf("cannot withdraw balance for user %d", user.ID), logger.Error(err))
 		}
 	}()
 
@@ -100,13 +100,13 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Authorization")
-	err := b.UserService.Authenticate(token)
+	user, err := b.UserService.Authenticate(token)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	withdrawn, err := b.storage.GetWithdrawn(b.ctx, b.UserService.User)
+	withdrawn, err := b.storage.GetWithdrawn(b.ctx, user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -116,7 +116,7 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 		Balance  float64 `json:"current"`
 		Withdraw float64 `json:"withdrawn"`
 	}{
-		Balance:  b.UserService.User.Balance,
+		Balance:  user.Balance,
 		Withdraw: withdrawn,
 	}
 
@@ -131,13 +131,13 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Authorization")
-	err := b.UserService.Authenticate(token)
+	user, err := b.UserService.Authenticate(token)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	withdrawals, err := b.storage.GetWithdrawals(b.ctx, b.UserService.User)
+	withdrawals, err := b.storage.GetWithdrawals(b.ctx, user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

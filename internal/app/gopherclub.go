@@ -29,7 +29,7 @@ func NewGopherClubAppInstance(opt config.Options, s storage.Storage) *GopherClub
 	c, cancel := context.WithCancel(context.Background())
 	ctx := &Ctx{Ctx: c, Cancel: cancel}
 	us := users.NewUserService(c, s)
-	os := orders.NewOrdersService(c, s, &us)
+	os := orders.NewOrdersService(c, s, &us, opt)
 
 	instance := &GopherClubApp{
 		BalanceService: balance.NewBalanceService(c, s, &us, &os),

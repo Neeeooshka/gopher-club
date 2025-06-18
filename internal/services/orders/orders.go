@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 	"io"
 	"net/http"
@@ -20,22 +21,21 @@ const (
 )
 
 type OrdersRepository interface {
-	AddOrder(string, int) error
+	AddOrder(string, int) (Order, error)
 	ListOrders(context.Context) ([]Order, error)
 	ListUserOrders(context.Context, users.User) ([]Order, error)
-	UpdateOrders(context.Context, []Order) error
 }
 
 type OrdersService struct {
-	Errors         []error
-	Inited         bool
-	UserService    *users.UserService
-	ctx            context.Context
-	storage        OrdersRepository
-	updateInterval time.Duration
+	Errors        []error
+	Inited        bool
+	UserService   *users.UserService
+	ctx           context.Context
+	storage       OrdersRepository
+	updateService OrdersUpdateService
 }
 
-func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService) OrdersService {
+func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService, opt config.Options) OrdersService {
 
 	var os OrdersService
 
@@ -49,14 +49,20 @@ func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService
 		os.Errors = append(os.Errors, errors.New("UserService is unavailable"))
 	}
 
+	ous, err := NewOrdersUpdateService(ctx, or, opt)
+
+	if err != nil {
+		os.Errors = append(os.Errors, errors.New("cannot initialize OrdersUpdateService"))
+	}
+
 	if len(os.Errors) > 0 {
 		return os
 	}
 
 	os.ctx = ctx
 	os.storage = ordersRepo
-	os.updateInterval = time.Minute * 5
 	os.UserService = us
+	os.updateService = ous
 	os.Inited = true
 
 	return os
@@ -65,7 +71,7 @@ func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService
 func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Authorization")
-	err := o.UserService.Authenticate(token)
+	user, err := o.UserService.Authenticate(token)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -84,7 +90,7 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = o.storage.AddOrder(orderNumber, o.UserService.User.ID)
+	order, err := o.storage.AddOrder(orderNumber, user.ID)
 	var cue *ConflictOrderError
 	var coue *ConflictOrderUserError
 	if err != nil {
@@ -100,19 +106,21 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	o.updateService.AddWaitingOrder(order)
+
 	w.WriteHeader(http.StatusAccepted)
 }
 
 func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Authorization")
-	err := o.UserService.Authenticate(token)
+	user, err := o.UserService.Authenticate(token)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	orders, err := o.storage.ListUserOrders(o.ctx, o.UserService.User)
+	orders, err := o.storage.ListUserOrders(o.ctx, user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -152,12 +160,6 @@ func (o *OrdersService) CheckLuhn(orderNumber string) bool {
 		sum += digit
 	}
 	return sum%10 == 0
-}
-
-func (o *OrdersService) updateOrders() {
-
-	_ = time.NewTicker(o.updateInterval)
-
 }
 
 type Order struct {

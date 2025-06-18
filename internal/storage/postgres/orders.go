@@ -7,53 +7,59 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 )
 
-func (l *Postgres) AddOrder(number string, userId int) error {
+func (l *Postgres) AddOrder(number string, userId int) (orders.Order, error) {
 
-	var id int
+	var order orders.Order
 	var isNew bool
-	var uID int
 
-	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_orders (user_id, num)\n    VALUES ($1, $2)\n    ON CONFLICT (number) DO NOTHING\n        RETURNING user_id\n)\nSELECT id, 1 as is_new, $1 as user_id FROM ins\nUNION  ALL\nSELECT id, 0 as is_new, user_id FROM gopher_users WHERE number = $2\nLIMIT 1", userId, number)
-	err := row.Scan(&id, &isNew, &uID)
+	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_orders (user_id, num)\n    VALUES ($1, $2)\n    ON CONFLICT (num) DO NOTHING\n    RETURNING *, 1 AS is_new\n)\nSELECT * FROM ins\nUNION  ALL\nSELECT *, 0 AS is_new FROM gopher_orders WHERE num = $2\nLIMIT 1", userId, number)
+	err := row.Scan(
+		&order.ID,
+		&order.UserID,
+		&order.Number,
+		&order.DateInsert,
+		&order.Accrual,
+		&order.Status,
+		&isNew,
+	)
 	if err != nil {
-		return err
+		return order, err
 	}
 
 	if !isNew {
-		if uID == userId {
-			return orders.NewConflictOrderError(number)
+		if order.UserID == userId {
+			return order, orders.NewConflictOrderError(number)
 		}
-		return orders.NewConflictOrderUserError(uID, number)
+		return order, orders.NewConflictOrderUserError(order.UserID, number)
 	}
 
-	return nil
+	return order, nil
 }
 
 func (l *Postgres) UpdateOrders(ctx context.Context, orders []orders.Order) error {
 
-	stmt, err := l.DB.BeginTx(ctx, nil)
-	defer stmt.Rollback()
+	tx, err := l.DB.BeginTx(ctx, nil)
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, "update gopher_orders set status = $1, accrual = $2 where order_id = $3")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 
 	for _, order := range orders {
-		_, err = stmt.ExecContext(ctx, "update gopher_orders set status = $1, accrual = $2 where order_id = $3", order.Status, order.Accrual, order.UserID)
-		if err != nil {
-			return err
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			_, err := stmt.ExecContext(ctx, order.Status, order.Accrual, order.ID)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	return stmt.Commit()
-}
-
-func (l *Postgres) ListOrders(ctx context.Context) ([]orders.Order, error) {
-
-	rows, err := l.DB.QueryContext(ctx, "select * from gopher_orders where status not in ('INVALID', 'PROCESSED')")
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	return l.extractOrders(rows)
+	return tx.Commit()
 }
 
 func (l *Postgres) ListUserOrders(ctx context.Context, user users.User) ([]orders.Order, error) {

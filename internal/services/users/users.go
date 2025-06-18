@@ -17,7 +17,6 @@ type UserRepository interface {
 type UserService struct {
 	Errors  []error
 	Inited  bool
-	User    User
 	storage UserRepository
 	ctx     context.Context
 }
@@ -106,19 +105,21 @@ func (u *UserService) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (u *UserService) Authenticate(jwtToken string) error {
+func (u *UserService) Authenticate(jwtToken string) (User, error) {
+
+	var user User
 
 	login, err := VerifyJWTToken(jwtToken)
 	if err != nil {
-		return err
+		return user, err
 	}
 
-	u.User, err = u.storage.GetUserByLogin(login)
+	user, err = u.storage.GetUserByLogin(login)
 	if err != nil {
-		return err
+		return user, fmt.Errorf("error authentication: %w", err)
 	}
 
-	return nil
+	return user, nil
 }
 
 func (u *UserService) Authorize(cr credentials) (string, error) {
@@ -133,9 +134,7 @@ func (u *UserService) Authorize(cr credentials) (string, error) {
 		return "", fmt.Errorf("error authorization: %w", err)
 	}
 
-	u.User = user
-
-	return CreateJWTToken(u.User.Login)
+	return CreateJWTToken(user.Login)
 }
 
 type User struct {
