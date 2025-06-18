@@ -33,20 +33,24 @@ func (l *Postgres) GetWithdrawals(ctx context.Context, user users.User) ([]balan
 
 func (l *Postgres) WithdrawBalance(ctx context.Context, w balance.Withdraw) error {
 
-	stmt, err := l.DB.BeginTx(ctx, nil)
+	tx, err := l.DB.BeginTx(ctx, nil)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-	_, err = stmt.ExecContext(ctx, "insert into gopher_withdrawals (user_id, order_id, sum) values ($1, $2, $3)", w.UserID, w.OrderID, w.Sum)
+	_, err = tx.ExecContext(ctx, "insert into gopher_withdrawals (user_id, order_id, sum) values ($1, $2, $3)", w.UserID, w.OrderID, w.Sum)
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.ExecContext(ctx, "update gopher_users set balance = balance + $1 where user_id = $2", w.Sum, w.UserID)
+	_, err = tx.ExecContext(ctx, "update gopher_users set balance = balance + $1 where user_id = $2", w.Sum, w.UserID)
 	if err != nil {
-		stmt.Rollback()
+		tx.Rollback()
 		return err
 	}
 
-	return stmt.Commit()
+	return tx.Commit()
 }
 
 func (l *Postgres) GetWithdrawn(ctx context.Context, user users.User) (float64, error) {

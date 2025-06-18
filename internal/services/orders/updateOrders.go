@@ -104,7 +104,7 @@ func (o *OrdersUpdateService) updateOrders() {
 	for _, order := range o.waitingOrders {
 		res, err := r.Get(fmt.Sprintf(o.opt.GetAccrualSystem()+"/api/orders/%s", order.Number))
 		if err != nil {
-			o.logger.Debug(fmt.Sprintf("cannot connect to the Loyalty calculation system"), o.logger.Error(err))
+			o.logger.Debug("cannot connect to the Loyalty calculation system", o.logger.Error(err))
 			return
 		}
 
@@ -172,7 +172,7 @@ func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]Order) 
 	}
 
 	if err := o.storage.UpdateOrders(o.ctx, ordersForUpdate); err != nil {
-		o.logger.Debug(fmt.Sprintf("cannot update orders from the Loyalty calculation system"), o.logger.Error(err))
+		o.logger.Debug("cannot update orders from the Loyalty calculation system", o.logger.Error(err))
 		return
 	}
 

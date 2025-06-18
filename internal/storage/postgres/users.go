@@ -25,9 +25,13 @@ func (l *Postgres) AddUser(ctx context.Context, user users.User, salt string) er
 	var id int
 	var isNew bool
 
-	stmt, err := l.DB.BeginTx(ctx, nil)
+	tx, err := l.DB.BeginTx(ctx, nil)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-	row := stmt.QueryRowContext(ctx, "WITH ins AS (\n    INSERT INTO gopher_users (login, password)\n    VALUES ($1, $2)\n    ON CONFLICT (login) DO NOTHING\n        RETURNING id\n)\nSELECT id, 1 as is_new FROM ins\nUNION  ALL\nSELECT id, 0 as is_new FROM gopher_users WHERE login = $1\nLIMIT 1", user.Login, user.Password)
+	row := tx.QueryRowContext(ctx, "WITH ins AS (\n    INSERT INTO gopher_users (login, password)\n    VALUES ($1, $2)\n    ON CONFLICT (login) DO NOTHING\n        RETURNING id\n)\nSELECT id, 1 as is_new FROM ins\nUNION  ALL\nSELECT id, 0 as is_new FROM gopher_users WHERE login = $1\nLIMIT 1", user.Login, user.Password)
 	err = row.Scan(&id, &isNew)
 	if err != nil {
 		return err
@@ -37,11 +41,11 @@ func (l *Postgres) AddUser(ctx context.Context, user users.User, salt string) er
 		return users.NewConflictUserError(id, user.Login)
 	}
 
-	_, err = stmt.ExecContext(ctx, "INSERT INTO gopher_user_params (user_id, p_name, p_value) VALUES ($1, 'credentials', $2)", id, salt)
+	_, err = tx.ExecContext(ctx, "INSERT INTO gopher_user_params (user_id, p_name, p_value) VALUES ($1, 'credentials', $2)", id, salt)
 	if err != nil {
-		stmt.Rollback()
+		tx.Rollback()
 		return err
 	}
 
-	return stmt.Commit()
+	return tx.Commit()
 }

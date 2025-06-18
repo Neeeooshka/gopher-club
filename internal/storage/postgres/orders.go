@@ -7,12 +7,12 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 )
 
-func (l *Postgres) AddOrder(number string, userId int) (orders.Order, error) {
+func (l *Postgres) AddOrder(number string, userID int) (orders.Order, error) {
 
 	var order orders.Order
 	var isNew bool
 
-	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_orders (user_id, num)\n    VALUES ($1, $2)\n    ON CONFLICT (num) DO NOTHING\n    RETURNING *, 1 AS is_new\n)\nSELECT * FROM ins\nUNION  ALL\nSELECT *, 0 AS is_new FROM gopher_orders WHERE num = $2\nLIMIT 1", userId, number)
+	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_orders (user_id, num)\n    VALUES ($1, $2)\n    ON CONFLICT (num) DO NOTHING\n    RETURNING *, 1 AS is_new\n)\nSELECT * FROM ins\nUNION  ALL\nSELECT *, 0 AS is_new FROM gopher_orders WHERE num = $2\nLIMIT 1", userID, number)
 	err := row.Scan(
 		&order.ID,
 		&order.UserID,
@@ -27,7 +27,7 @@ func (l *Postgres) AddOrder(number string, userId int) (orders.Order, error) {
 	}
 
 	if !isNew {
-		if order.UserID == userId {
+		if order.UserID == userID {
 			return order, orders.NewConflictOrderError(number)
 		}
 		return order, orders.NewConflictOrderUserError(order.UserID, number)
@@ -39,6 +39,11 @@ func (l *Postgres) AddOrder(number string, userId int) (orders.Order, error) {
 func (l *Postgres) UpdateOrders(ctx context.Context, orders []orders.Order) error {
 
 	tx, err := l.DB.BeginTx(ctx, nil)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, "update gopher_orders set status = $1, accrual = $2 where order_id = $3")

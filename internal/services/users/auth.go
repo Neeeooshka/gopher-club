@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-const PASS_KEY = "supergophermarket"
+const passKey = "supergophermarket"
 
-const JWT_KEY = "aB3vC6dF9gJ2kM5nQ8rS1uV4xZ7yT0wE4hH7jK9lL0pO7iU"
+const jwtKey = "aB3vC6dF9gJ2kM5nQ8rS1uV4xZ7yT0wE4hH7jK9lL0pO7iU"
 
 var JWTLiveTime = time.Hour * 720
 
@@ -22,7 +22,7 @@ type Cipher struct {
 
 func NewCipher() (*Cipher, error) {
 
-	aesblock, err := aes.NewCipher([]byte(PASS_KEY))
+	aesblock, err := aes.NewCipher([]byte(passKey))
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (c *Cipher) DecodeSalt(token string) (string, error) {
 }
 
 func (c *Cipher) getNonce() []byte {
-	return []byte(PASS_KEY)[7 : 7+c.gsm.NonceSize()]
+	return []byte(passKey)[7 : 7+c.gsm.NonceSize()]
 }
 
 func generateRandom(size int) (string, error) {
@@ -86,7 +86,7 @@ func CreateJWTToken(login string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	JWTToken, err := token.SignedString(JWT_KEY)
+	JWTToken, err := token.SignedString(jwtKey)
 	if err != nil {
 		return "", err
 	}
@@ -99,7 +99,7 @@ func VerifyJWTToken(JWTToken string) (string, error) {
 
 	if JWTToken != "" {
 		token, err := jwt.ParseWithClaims(JWTToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-			return JWT_KEY, nil
+			return jwtKey, nil
 		})
 		if err != nil {
 			return "", err
