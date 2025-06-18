@@ -5,13 +5,13 @@ import (
 	"go.uber.org/zap"
 )
 
-type zapLogger struct {
+type ZapLogger struct {
 	logger *zap.Logger
 }
 
-var Log = &zapLogger{logger: zap.NewNop()}
+var Log = &ZapLogger{logger: zap.NewNop()}
 
-func (l *zapLogger) init(level string) error {
+func (l *ZapLogger) init(level string) error {
 	lvl, err := zap.ParseAtomicLevel(level)
 	if err != nil {
 		return err
@@ -26,7 +26,7 @@ func (l *zapLogger) init(level string) error {
 	return nil
 }
 
-func (l *zapLogger) Log(rq logger.RequestData, rs logger.ResponseData) {
+func (l *ZapLogger) Log(rq logger.RequestData, rs logger.ResponseData) {
 	l.logger.Info("receive new request",
 		zap.String("URI", rq.URI),
 		zap.String("method", rq.Method),
@@ -36,26 +36,26 @@ func (l *zapLogger) Log(rq logger.RequestData, rs logger.ResponseData) {
 	)
 }
 
-func (l *zapLogger) Debug(msg string, fields ...zap.Field) {
+func (l *ZapLogger) Debug(msg string, fields ...zap.Field) {
 	l.logger.Debug(msg, fields...)
 }
 
-func (l *zapLogger) String(key string, val string) zap.Field {
+func (l *ZapLogger) String(key string, val string) zap.Field {
 	return zap.String(key, val)
 }
 
-func (l *zapLogger) Int64(key string, val int64) zap.Field {
+func (l *ZapLogger) Int64(key string, val int64) zap.Field {
 	return zap.Int64(key, val)
 }
 
-func (l *zapLogger) Error(err error) zap.Field {
+func (l *ZapLogger) Error(err error) zap.Field {
 	return zap.Error(err)
 }
 
-func (l *zapLogger) Info(msg string, fields ...zap.Field) {
+func (l *ZapLogger) Info(msg string, fields ...zap.Field) {
 	l.logger.Info(msg, fields...)
 }
 
-func NewZapLogger(level string) (*zapLogger, error) {
+func NewZapLogger(level string) (*ZapLogger, error) {
 	return Log, Log.init(level)
 }

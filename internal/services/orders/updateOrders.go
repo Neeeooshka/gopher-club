@@ -18,6 +18,7 @@ type OrdersUpdateRepository interface {
 
 type OrdersUpdateService struct {
 	ctx            context.Context
+	logger         *zap.ZapLogger
 	opt            config.Options
 	storage        OrdersUpdateRepository
 	updateInterval time.Duration
@@ -39,7 +40,13 @@ func NewOrdersUpdateService(ctx context.Context, our interface{}, opt config.Opt
 		return ous, fmt.Errorf("unable to request order details: %w", err)
 	}
 
+	logger, err := zap.NewZapLogger("debug")
+	if err != nil {
+		return ous, fmt.Errorf("unable to initialize logger: %w", err)
+	}
+
 	ous.ctx = ctx
+	ous.logger = logger
 	ous.opt = opt
 	ous.storage = repo
 	ous.updateInterval = time.Minute * 5
@@ -69,6 +76,8 @@ func (o *OrdersUpdateService) ordersUpdater() {
 	}
 }
 
+// updateOrders pull new status and accrual for all waiting orders from the Loyalty calculation system
+// and send it to updateOrdersProcessor if there changes
 func (o *OrdersUpdateService) updateOrders() {
 
 	// do nothing
@@ -76,21 +85,10 @@ func (o *OrdersUpdateService) updateOrders() {
 		return
 	}
 
-	logger, _ := zap.NewZapLogger("debug")
+	dataCh := make(chan Order)
+	defer close(dataCh)
 
-	ordersForUpdate := make([]Order, 0, len(o.waitingOrders))  // slice for update
-	newWaitingOrders := make([]Order, 0, len(o.waitingOrders)) // new slice of waitingOrders
-
-	// save updated orders
-	defer func() {
-		err := o.storage.UpdateOrders(o.ctx, ordersForUpdate)
-		if err != nil {
-			logger.Debug(fmt.Sprintf("cannot update orders from the Loyalty calculation system"), logger.Error(err))
-			return
-		}
-
-		o.waitingOrders = newWaitingOrders
-	}()
+	go o.updateOrdersProcessor(dataCh)
 
 	type orderInfo struct {
 		Number  string  `json:"order"`
@@ -106,12 +104,12 @@ func (o *OrdersUpdateService) updateOrders() {
 	for _, order := range o.waitingOrders {
 		res, err := r.Get(fmt.Sprintf(o.opt.GetAccrualSystem()+"/api/orders/%s", order.Number))
 		if err != nil {
-			logger.Debug(fmt.Sprintf("cannot connect to the Loyalty calculation system"), logger.Error(err))
+			o.logger.Debug(fmt.Sprintf("cannot connect to the Loyalty calculation system"), o.logger.Error(err))
 			return
 		}
 
 		if res.StatusCode() == http.StatusNoContent {
-			logger.Debug(fmt.Sprintf("order is not find in the Loyalty calculation system: %s", order.Number))
+			o.logger.Debug(fmt.Sprintf("order is not find in the Loyalty calculation system: %s", order.Number))
 			continue
 		}
 
@@ -120,29 +118,61 @@ func (o *OrdersUpdateService) updateOrders() {
 		}
 
 		if res.StatusCode() != http.StatusOK {
-			logger.Debug(fmt.Sprintf("the Loyalty calculation system return an unexpected status code: %d", res.StatusCode()))
+			o.logger.Debug(fmt.Sprintf("the Loyalty calculation system return an unexpected status code: %d", res.StatusCode()))
 			return
 		}
 
-		o := orderInfo{}
+		oi := orderInfo{}
 
-		if err := json.NewDecoder(res.Body).Decode(&o); err != nil {
-			logger.Debug(fmt.Sprintf("cannot deserialize response from the Loyalty calculation system: %v", err), logger.Error(err))
+		if err := json.NewDecoder(res.Body).Decode(&oi); err != nil {
+			o.logger.Debug(fmt.Sprintf("cannot deserialize response from the Loyalty calculation system: %v", err), o.logger.Error(err))
 			return
 		}
 
 		// if there changes
-		if order.Accrual != o.Accrual || order.Status != o.Status {
+		if order.Accrual != oi.Accrual || order.Status != oi.Status {
 
-			order.Accrual = o.Accrual
-			order.Status = o.Status
+			order.Accrual = oi.Accrual
+			order.Status = oi.Status
 
-			ordersForUpdate = append(ordersForUpdate, order)
-
-			// exclude finish states for next time
-			if order.Status != "PROCESSED" && order.Status != "INVALID" {
-				newWaitingOrders = append(newWaitingOrders, order)
-			}
+			dataCh <- order
 		}
 	}
+}
+
+func (o *OrdersUpdateService) updateOrdersProcessor(dataCh chan Order) {
+
+	ordersForUpdateMap := make(map[string]Order)
+
+	for order := range dataCh {
+		ordersForUpdateMap[order.Number] = order
+	}
+
+	if len(ordersForUpdateMap) > 0 {
+		o.applyUpdates(ordersForUpdateMap)
+	}
+}
+
+func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]Order) {
+
+	var ordersForUpdate []Order
+	newWaitingOrders := make([]Order, 0, len(o.waitingOrders))
+
+	for _, order := range o.waitingOrders {
+		if ord, ok := ordersForUpdateMap[order.Number]; ok {
+			ordersForUpdate = append(ordersForUpdate, order)
+			if ord.Status == "PROCESSED" || ord.Status == "INVALID" {
+				continue
+			}
+		}
+
+		newWaitingOrders = append(newWaitingOrders, order)
+	}
+
+	if err := o.storage.UpdateOrders(o.ctx, ordersForUpdate); err != nil {
+		o.logger.Debug(fmt.Sprintf("cannot update orders from the Loyalty calculation system"), o.logger.Error(err))
+		return
+	}
+
+	o.waitingOrders = newWaitingOrders
 }
