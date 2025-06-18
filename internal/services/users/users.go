@@ -1,28 +1,32 @@
 package users
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Neeeooshka/gopher-club/internal/app"
-	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"net/http"
 )
 
+type UserRepository interface {
+	AddUser(User, string) error
+	GetUserByLogin(string) (User, error)
+}
+
 type UserService struct {
 	Inited  bool
-	storage storage.UserRepository
-	ctx     *app.Ctx
+	storage UserRepository
+	ctx     context.Context
 	Errors  []error
 	User    User
 }
 
-func NewUserService(ctx *app.Ctx, ur interface{}) UserService {
+func NewUserService(ctx context.Context, ur interface{}) UserService {
 
 	var us UserService
 
-	userRepo, ok := ur.(storage.UserRepository)
+	userRepo, ok := ur.(UserRepository)
 
 	if !ok {
 		us.Errors = append(us.Errors, fmt.Errorf("2th argument expected UserRepository, got %T", ur))
@@ -121,12 +125,12 @@ func (u *UserService) Authorize(cr credentials) (string, error) {
 
 	user, err := u.storage.GetUserByLogin(cr.Login)
 	if err != nil {
-		return "", fmt.Errorf("Ошибка авторизации: %w", err)
+		return "", fmt.Errorf("error authorization: %w", err)
 	}
 
 	err = cr.verifyPassword(user)
 	if err != nil {
-		return "", fmt.Errorf("Ошибка авторизации: %w", err)
+		return "", fmt.Errorf("error authorization: %w", err)
 	}
 
 	u.User = user
@@ -177,16 +181,16 @@ func (cr *credentials) verifyPassword(user User) error {
 
 	gsm, err := NewCipher()
 	if err != nil {
-		return fmt.Errorf("ошибка проверки пароля: %w", err)
+		return fmt.Errorf("error verifying password: %w", err)
 	}
 
 	salt, err := gsm.DecodeSalt(user.Credentials)
 	if err != nil {
-		return fmt.Errorf("ошибка проверки пароля: %w", err)
+		return fmt.Errorf("error verifying password: %w", err)
 	}
 
 	if sha256.Sum256([]byte(cr.Password+salt)) != hash {
-		return fmt.Errorf("ошибка проверки пароля: %w", errors.New("неверный пароль"))
+		return fmt.Errorf("error verifying password: %w", errors.New("password incorrect"))
 	}
 
 	return nil
