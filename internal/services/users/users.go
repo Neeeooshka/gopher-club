@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -77,7 +78,15 @@ func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	u.LoginUserHandler(w, r)
+	token, err := u.Authorize(cr)
+
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Add("Authorization", token)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (u *UserService) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -184,13 +193,18 @@ func (cr *credentials) createPassword() (string, string, error) {
 	salt, _ := gsm.DecodeSalt(token)
 	hash := sha256.Sum256([]byte(cr.Password + salt))
 
-	return string(hash[:]), token, nil
+	return hex.EncodeToString(hash[:]), token, nil
 }
 
 func (cr *credentials) verifyPassword(user User) error {
 
+	pass, err := hex.DecodeString(user.Password)
+	if err != nil {
+		return fmt.Errorf("error verifying password: %w", err)
+	}
+
 	var hash [32]byte
-	copy(hash[:], user.Password)
+	copy(hash[:], pass)
 
 	gsm, err := NewCipher()
 	if err != nil {

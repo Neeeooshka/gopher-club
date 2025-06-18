@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
@@ -22,7 +23,9 @@ type Cipher struct {
 
 func NewCipher() (*Cipher, error) {
 
-	aesblock, err := aes.NewCipher([]byte(passKey))
+	key := sha256.Sum256([]byte(passKey))
+
+	aesblock, err := aes.NewCipher(key[:])
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +63,8 @@ func (c *Cipher) DecodeSalt(token string) (string, error) {
 }
 
 func (c *Cipher) getNonce() []byte {
-	return []byte(passKey)[7 : 7+c.gsm.NonceSize()]
+	key := sha256.Sum256([]byte(passKey))
+	return key[7 : 7+c.gsm.NonceSize()]
 }
 
 func generateRandom(size int) (string, error) {
@@ -86,7 +90,7 @@ func CreateJWTToken(login string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	JWTToken, err := token.SignedString(jwtKey)
+	JWTToken, err := token.SignedString([]byte(jwtKey))
 	if err != nil {
 		return "", err
 	}
@@ -99,7 +103,7 @@ func VerifyJWTToken(JWTToken string) (string, error) {
 
 	if JWTToken != "" {
 		token, err := jwt.ParseWithClaims(JWTToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-			return jwtKey, nil
+			return []byte(jwtKey), nil
 		})
 		if err != nil {
 			return "", err

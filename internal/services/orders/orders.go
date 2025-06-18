@@ -22,7 +22,6 @@ const (
 
 type OrdersRepository interface {
 	AddOrder(string, int) (Order, error)
-	ListOrders(context.Context) ([]Order, error)
 	ListUserOrders(context.Context, users.User) ([]Order, error)
 }
 

@@ -161,7 +161,7 @@ func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]Order) 
 	for _, order := range o.waitingOrders {
 		if ord, ok := ordersForUpdateMap[order.Number]; ok {
 			ordersForUpdate = append(ordersForUpdate, ord)
-			if ord.Status == "PROCESSED" || ord.Status == "INVALID" {
+			if ord.Status == StatusProcessed || ord.Status == StatusInvalid {
 				continue
 			}
 
