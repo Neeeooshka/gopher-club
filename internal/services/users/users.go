@@ -10,7 +10,7 @@ import (
 )
 
 type UserRepository interface {
-	AddUser(User, string) error
+	AddUser(context.Context, User, string) error
 	GetUserByLogin(string) (User, error)
 }
 
@@ -67,7 +67,7 @@ func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 		Password: password,
 	}
 
-	err = u.storage.AddUser(user, salt)
+	err = u.storage.AddUser(u.ctx, user, salt)
 	var ce *ConflictUserError
 	if err != nil {
 		if errors.As(err, &ce) {

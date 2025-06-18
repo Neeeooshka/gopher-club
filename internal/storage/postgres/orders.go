@@ -12,7 +12,7 @@ func (l *Postgres) AddOrder(number string, userId int) error {
 	var isNew bool
 	var uID int
 
-	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_orders (user_id, number)\n    VALUES ($1, $2)\n    ON CONFLICT (number) DO NOTHING\n        RETURNING user_id\n)\nSELECT id, 1 as is_new, $1 as user_id FROM ins\nUNION  ALL\nSELECT id, 0 as is_new, user_id FROM gopher_users WHERE number = $2\nLIMIT 1", userId, number)
+	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_orders (user_id, num)\n    VALUES ($1, $2)\n    ON CONFLICT (number) DO NOTHING\n        RETURNING user_id\n)\nSELECT id, 1 as is_new, $1 as user_id FROM ins\nUNION  ALL\nSELECT id, 0 as is_new, user_id FROM gopher_users WHERE number = $2\nLIMIT 1", userId, number)
 	err := row.Scan(&id, &isNew, &uID)
 	if err != nil {
 		return err
