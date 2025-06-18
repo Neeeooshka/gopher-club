@@ -1,4 +1,4 @@
-package auth
+package users
 
 import (
 	"crypto/aes"
@@ -8,11 +8,8 @@ import (
 	"encoding/hex"
 )
 
-type User struct {
-	ID       int      `db:"ID"`
-	Login    string   `db:"login"  json:"login"`
-	Name     string   `db:"name"`
-	Password Password `json:"password"`
+type AuthService interface {
+	Authenticate(login, password string) (bool, error)
 }
 
 type Password struct {
@@ -85,28 +82,33 @@ func (c *Cipher) GetSalt(token string) (string, error) {
 	return string(salt), err
 }
 
-func CreatePassword(password string) (*Password, error) {
+func CreatePassword(password string) (Password, error) {
+
+	var pwd Password
 
 	random, err := generateRandom(32)
 	if err != nil {
-		return nil, err
+		return pwd, err
 	}
 
 	key := sha256.Sum256([]byte(random))
 
 	gsm, err := NewCipher(key[:])
 	if err != nil {
-		return nil, err
+		return pwd, err
 	}
 
 	token, err := gsm.GenerateToken()
 	if err != nil {
-		return nil, err
+		return pwd, err
 	}
 
 	salt, _ := gsm.GetSalt(token)
 
-	return &Password{cipher: gsm, hash: sha256.Sum256([]byte(password + salt))}, err
+	pwd.hash = sha256.Sum256([]byte(password + salt))
+	pwd.cipher = gsm
+
+	return pwd, nil
 }
 
 func (p *Password) GetHash() string {
@@ -122,15 +124,19 @@ func (p *Password) Verify(password, token string) bool {
 	return sha256.Sum256([]byte(password+salt)) == p.hash
 }
 
-func NewPassword(hash string, key string) (*Password, error) {
+func NewPassword(hash string, key string) (Password, error) {
 
+	var pwd Password
 	var h [32]byte
 	copy(h[:], []byte(hash))
 
 	cipher, err := NewCipher([]byte(key))
 	if err != nil {
-		return nil, err
+		return pwd, err
 	}
 
-	return &Password{cipher: cipher, hash: h}, nil
+	pwd.cipher = cipher
+	pwd.hash = h
+
+	return pwd, nil
 }

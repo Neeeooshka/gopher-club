@@ -1,7 +1,7 @@
 package zap
 
 import (
-	"github.com/Neeeooshka/gopher-club.git/internal/logger"
+	"github.com/Neeeooshka/gopher-club/internal/logger"
 	"go.uber.org/zap"
 )
 

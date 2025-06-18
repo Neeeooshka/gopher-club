@@ -1,30 +1,26 @@
 package postgres
 
-import "github.com/Neeeooshka/gopher-club.git/internal/auth"
+import "github.com/Neeeooshka/gopher-club/internal/users"
 
-type ConflictUserError struct {
-	ID    int
-	login string
-}
+func (l *Postgres) GetUserByLogin(login string) (users.User, error) {
 
-func (e *ConflictUserError) Error() string {
-	return "User with login " + e.login + " already exsists"
-}
-
-func (l *Postgres) GetUserByLogin(login string) (*auth.User, bool) {
-
-	user := auth.User{}
+	var user users.User
 
 	row := l.DB.QueryRow("select * from gopher_users where login = $1", login)
-	err := row.Scan(&user)
-	if err != nil {
-		return &auth.User{}, false
-	}
 
-	return &user, true
+	return user, row.Scan(&user)
 }
 
-func (l *Postgres) AddUser(user auth.User) error {
+func (l *Postgres) GetUserKey(ID int) (string, error) {
+
+	var key string
+
+	row := l.DB.QueryRow("select * from gopher_keys where ID = $1", ID)
+
+	return key, row.Scan(&key)
+}
+
+func (l *Postgres) AddUser(user users.User) error {
 
 	var id int
 	var isNew bool
@@ -36,7 +32,7 @@ func (l *Postgres) AddUser(user auth.User) error {
 	}
 
 	if !isNew {
-		return &ConflictUserError{ID: id, login: user.Login}
+		return users.NewConflictUserError(id, user.Login)
 	}
 
 	return nil

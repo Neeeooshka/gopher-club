@@ -1,10 +1,14 @@
 package storage
 
-import (
-	"github.com/Neeeooshka/gopher-club.git/internal/auth"
-)
+import "github.com/Neeeooshka/gopher-club/internal/users"
 
-type Membership interface {
+type Storage interface {
+	UserRepository
 	Close() error
-	AddUser(user auth.User) error
+}
+
+type UserRepository interface {
+	AddUser(user users.User) error
+	GetUserByLogin(login string) (users.User, error)
+	GetUserKey(ID int) (string, error)
 }
