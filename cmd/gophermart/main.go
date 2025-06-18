@@ -52,16 +52,22 @@ func main() {
 	}
 
 	if appInstance.OrdersService.Inited {
-		router.Post("/api/user/orders", logger.IncludeLogger(compressor.IncludeCompressor(appInstance.AddUserOrderHandler, gzip.NewGzipCompressor()), zapLoger))
-		router.Get("/api/user/orders", logger.IncludeLogger(appInstance.GetUserOrdersHandler, zapLoger))
+		router.Post("/api/user/orders", logger.IncludeLogger(compressor.IncludeCompressor(appInstance.OrdersService.AddUserOrderHandler, gzip.NewGzipCompressor()), zapLoger))
+		router.Get("/api/user/orders", logger.IncludeLogger(appInstance.OrdersService.GetUserOrdersHandler, zapLoger))
 	} else {
 		router.Post("/api/user/orders", appInstance.ServiceUnavailableHandler)
 		router.Get("/api/user/orders", appInstance.ServiceUnavailableHandler)
 	}
 
-	router.Get("/api/user/balance", logger.IncludeLogger(appInstance.GetUserBalanceHandler, zapLoger))
-	router.Post("/api/user/balance/withdraw", logger.IncludeLogger(compressor.IncludeCompressor(appInstance.WithdrawUserBalanceHandler, gzip.NewGzipCompressor()), zapLoger))
-	router.Get("/api/user/withdrawals", logger.IncludeLogger(appInstance.GetUserWithdrawals, zapLoger))
+	if appInstance.BalanceService.Inited {
+		router.Get("/api/user/balance", logger.IncludeLogger(appInstance.BalanceService.GetUserBalanceHandler, zapLoger))
+		router.Post("/api/user/balance/withdraw", logger.IncludeLogger(compressor.IncludeCompressor(appInstance.BalanceService.WithdrawBalanceHandler, gzip.NewGzipCompressor()), zapLoger))
+		router.Get("/api/user/withdrawals", logger.IncludeLogger(appInstance.BalanceService.GetUserWithdrawalsHandler, zapLoger))
+	} else {
+		router.Get("/api/user/balance", appInstance.ServiceUnavailableHandler)
+		router.Post("/api/user/balance/withdraw", appInstance.ServiceUnavailableHandler)
+		router.Get("/api/user/withdrawals", appInstance.ServiceUnavailableHandler)
+	}
 
 	http.ListenAndServe(appInstance.Options.GetServer(), router)
 }

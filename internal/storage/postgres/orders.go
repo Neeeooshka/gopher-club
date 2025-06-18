@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 )
@@ -27,22 +28,28 @@ func (l *Postgres) AddOrder(number string, userId int) error {
 	return nil
 }
 
-func (l *Postgres) AddOUser(user users.User, salt string) error {
+func (l *Postgres) ListOrders(ctx context.Context, user users.User) ([]orders.Order, error) {
 
-	var id int
-	var isNew bool
+	var result []orders.Order
 
-	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_users (login, password)\n    VALUES ($1, $2)\n    ON CONFLICT (login) DO NOTHING\n        RETURNING id\n)\nSELECT id, 1 as is_new FROM ins\nUNION  ALL\nSELECT id, 0 as is_new FROM gopher_users WHERE login = $1\nLIMIT 1", user.Login, user.Password)
-	err := row.Scan(&id, &isNew)
+	rows, err := l.DB.QueryContext(ctx, "select * from gopher_orders where user_id = $1 order by date_insert desc", user.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if !isNew {
-		return users.NewConflictUserError(id, user.Login)
+	defer rows.Close()
+
+	for rows.Next() {
+		var o orders.Order
+		if err := rows.Scan(&o); err != nil {
+			return nil, err
+		}
+		result = append(result, o)
 	}
 
-	_, err = l.DB.Exec("INSERT INTO gopher_user_options (user_id, credentials) VALUES ($1, $2)", id, salt)
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-	return err
+	return result, nil
 }

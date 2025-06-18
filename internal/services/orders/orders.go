@@ -2,16 +2,26 @@ package orders
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 	"io"
 	"net/http"
 	"strconv"
+	"time"
+)
+
+const (
+	StatusNew        = "NEW"
+	StatusProcessing = "PROCESSING"
+	StatusInvalid    = "INVALID"
+	StatusProcessed  = "PROCESSED"
 )
 
 type OrdersRepository interface {
 	AddOrder(string, int) error
+	ListOrders(context.Context, users.User) ([]Order, error)
 }
 
 type OrdersService struct {
@@ -36,13 +46,14 @@ func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService
 		os.Errors = append(os.Errors, errors.New("UserService is unavailable"))
 	}
 
+	if len(os.Errors) > 0 {
+		return os
+	}
+
 	os.ctx = ctx
 	os.storage = ordersRepo
 	os.UserService = us
-
-	if len(os.Errors) == 0 {
-		os.Inited = true
-	}
+	os.Inited = true
 
 	return os
 }
@@ -50,11 +61,6 @@ func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService
 func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Authorization")
-	if token == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
 	err := o.UserService.Authenticate(token)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -69,7 +75,7 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 	defer r.Body.Close()
 
 	orderNumber := string(body)
-	if !o.checkLuhn(orderNumber) {
+	if !o.CheckLuhn(orderNumber) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
@@ -93,7 +99,35 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (o *OrdersService) checkLuhn(orderNumber string) bool {
+func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Request) {
+
+	token := r.Header.Get("Authorization")
+	err := o.UserService.Authenticate(token)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	orders, err := o.storage.ListOrders(o.ctx, o.UserService.User)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(orders); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (o *OrdersService) CheckLuhn(orderNumber string) bool {
 
 	var sum int
 
@@ -114,6 +148,15 @@ func (o *OrdersService) checkLuhn(orderNumber string) bool {
 		sum += digit
 	}
 	return sum%10 == 0
+}
+
+type Order struct {
+	ID         int       `db:"id"`
+	UserID     int       `db:"user_id"`
+	Number     string    `db:"number" json:"number"`
+	DateInsert time.Time `db:"date_insert" json:"uploaded_at"`
+	Accrual    int       `db:"accrual" json:"accrual,omitempty"`
+	Status     int       `db:"status" json:"status"`
 }
 
 type ConflictOrderError struct {

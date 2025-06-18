@@ -97,15 +97,17 @@ func CreateJWTToken(login string) (string, error) {
 // VerifyJWTToken return login, error
 func VerifyJWTToken(JWTToken string) (string, error) {
 
-	token, err := jwt.ParseWithClaims(JWTToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return JWT_KEY, nil
-	})
-	if err != nil {
-		return "", err
-	}
+	if JWTToken != "" {
+		token, err := jwt.ParseWithClaims(JWTToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+			return JWT_KEY, nil
+		})
+		if err != nil {
+			return "", err
+		}
 
-	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
-		return claims.Subject, nil
+		if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
+			return claims.Subject, nil
+		}
 	}
 
 	return "", fmt.Errorf("invalid token or token expired")
