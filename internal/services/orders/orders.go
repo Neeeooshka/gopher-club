@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/config"
+	"github.com/Neeeooshka/gopher-club/internal/services/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 	"io"
 	"net/http"
@@ -22,7 +23,7 @@ const (
 
 type OrdersRepository interface {
 	AddOrder(string, int) (Order, error)
-	ListUserOrders(context.Context, users.User) ([]Order, error)
+	ListUserOrders(context.Context, models.User) ([]Order, error)
 }
 
 type OrdersService struct {

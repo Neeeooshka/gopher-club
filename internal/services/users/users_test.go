@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/Neeeooshka/gopher-club/internal/storage/mock"
+	"github.com/Neeeooshka/gopher-club/internal/services/models"
+	"github.com/Neeeooshka/gopher-club/internal/storage/mocks"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,12 +14,12 @@ import (
 func TestLoginUserHandler(t *testing.T) {
 
 	ctx := context.Background()
-	mockRepo := &mock.MockRepository{
-		Users: make(map[string]User),
+	mockRepo := &mocks.MockRepository{
+		Users: make(map[string]models.User),
 	}
 	service := NewUserService(ctx, mockRepo)
 
-	testUser := User{
+	testUser := models.User{
 		Login:       "newuser",
 		Password:    "bf9760c303b7fbb093352d0e892c054c7b7a1db4fa26d690511cdd9602cdec5f",
 		Credentials: "f3dcb06e549ee9732d9f86579310ad297151343fff0089b2ad1ada4fd0aff8c6e4ef359306dda5a77d0028235cacf704",
@@ -83,8 +84,8 @@ func TestLoginUserHandler(t *testing.T) {
 
 func TestRegisterUserHandler(t *testing.T) {
 	ctx := context.Background()
-	mockRepo := &mock.MockRepository{
-		Users: make(map[string]User),
+	mockRepo := &mocks.MockRepository{
+		Users: make(map[string]models.User),
 	}
 	service := NewUserService(ctx, mockRepo)
 
@@ -114,7 +115,7 @@ func TestRegisterUserHandler(t *testing.T) {
 		},
 	}
 
-	mockRepo.Users["existinguser"] = User{Login: "existinguser"}
+	mockRepo.Users["existinguser"] = models.User{Login: "existinguser"}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

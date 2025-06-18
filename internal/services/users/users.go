@@ -7,12 +7,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Neeeooshka/gopher-club/internal/services/models"
+	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"net/http"
 )
 
 type UserRepository interface {
-	AddUser(context.Context, User, string) error
-	GetUserByLogin(string) (User, error)
+	AddUser(context.Context, models.User, string) error
+	GetUserByLogin(string) (models.User, error)
 }
 
 type UserService struct {
@@ -62,13 +64,13 @@ func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	user := User{
+	user := models.User{
 		Login:    cr.Login,
 		Password: password,
 	}
 
 	err = u.storage.AddUser(u.ctx, user, salt)
-	var ce *ConflictUserError
+	var ce *storage.ConflictUserError
 	if err != nil {
 		if errors.As(err, &ce) {
 			w.WriteHeader(http.StatusConflict)
@@ -114,9 +116,9 @@ func (u *UserService) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (u *UserService) Authenticate(jwtToken string) (User, error) {
+func (u *UserService) Authenticate(jwtToken string) (models.User, error) {
 
-	var user User
+	var user models.User
 
 	login, err := VerifyJWTToken(jwtToken)
 	if err != nil {
@@ -144,27 +146,6 @@ func (u *UserService) Authorize(cr credentials) (string, error) {
 	}
 
 	return CreateJWTToken(user.Login)
-}
-
-type User struct {
-	ID          int     `db:"ID"`
-	Login       string  `db:"login"`
-	Password    string  `db:"password"`
-	Credentials string  `db:"credentials"`
-	Balance     float64 `db:"balance"`
-}
-
-type ConflictUserError struct {
-	ID    int
-	login string
-}
-
-func NewConflictUserError(ID int, login string) *ConflictUserError {
-	return &ConflictUserError{ID, login}
-}
-
-func (e *ConflictUserError) Error() string {
-	return "User with login " + e.login + " already exsists"
 }
 
 type credentials struct {
@@ -196,7 +177,7 @@ func (cr *credentials) createPassword() (string, string, error) {
 	return hex.EncodeToString(hash[:]), token, nil
 }
 
-func (cr *credentials) verifyPassword(user User) error {
+func (cr *credentials) verifyPassword(user models.User) error {
 
 	pass, err := hex.DecodeString(user.Password)
 	if err != nil {

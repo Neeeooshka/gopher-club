@@ -2,12 +2,13 @@ package postgres
 
 import (
 	"context"
-	"github.com/Neeeooshka/gopher-club/internal/services/users"
+	"github.com/Neeeooshka/gopher-club/internal/services/models"
+	"github.com/Neeeooshka/gopher-club/internal/storage"
 )
 
-func (l *Postgres) GetUserByLogin(login string) (users.User, error) {
+func (l *Postgres) GetUserByLogin(login string) (models.User, error) {
 
-	var user users.User
+	var user models.User
 
 	row := l.DB.QueryRow("select * from gopher_users where login = $1", login)
 	err := row.Scan(&user)
@@ -20,7 +21,7 @@ func (l *Postgres) GetUserByLogin(login string) (users.User, error) {
 	return user, row.Scan(&user)
 }
 
-func (l *Postgres) AddUser(ctx context.Context, user users.User, salt string) error {
+func (l *Postgres) AddUser(ctx context.Context, user models.User, salt string) error {
 
 	var id int
 	var isNew bool
@@ -38,7 +39,7 @@ func (l *Postgres) AddUser(ctx context.Context, user users.User, salt string) er
 	}
 
 	if !isNew {
-		return users.NewConflictUserError(id, user.Login)
+		return storage.NewConflictUserError(id, user.Login)
 	}
 
 	_, err = tx.ExecContext(ctx, "INSERT INTO gopher_user_params (user_id, p_name, p_value) VALUES ($1, 'credentials', $2)", id, salt)

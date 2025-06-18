@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
+	"github.com/Neeeooshka/gopher-club/internal/services/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 	"net/http"
@@ -14,8 +15,8 @@ import (
 
 type BalanceRepository interface {
 	WithdrawBalance(context.Context, Withdraw) error
-	GetWithdrawals(context.Context, users.User) ([]Withdraw, error)
-	GetWithdrawn(context.Context, users.User) (float64, error)
+	GetWithdrawals(context.Context, models.User) ([]Withdraw, error)
+	GetWithdrawn(context.Context, models.User) (float64, error)
 }
 
 type BalanceService struct {

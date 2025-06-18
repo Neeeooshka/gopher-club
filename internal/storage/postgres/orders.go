@@ -3,8 +3,8 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"github.com/Neeeooshka/gopher-club/internal/services/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
-	"github.com/Neeeooshka/gopher-club/internal/services/users"
 )
 
 func (l *Postgres) AddOrder(number string, userID int) (orders.Order, error) {
@@ -36,7 +36,7 @@ func (l *Postgres) AddOrder(number string, userID int) (orders.Order, error) {
 	return order, nil
 }
 
-func (l *Postgres) ListUserOrders(ctx context.Context, user users.User) ([]orders.Order, error) {
+func (l *Postgres) ListUserOrders(ctx context.Context, user models.User) ([]orders.Order, error) {
 
 	rows, err := l.DB.QueryContext(ctx, "select * from gopher_orders where user_id = $1 order by date_insert desc", user.ID)
 	if err != nil {

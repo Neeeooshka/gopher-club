@@ -3,10 +3,10 @@ package postgres
 import (
 	"context"
 	"github.com/Neeeooshka/gopher-club/internal/services/balance"
-	"github.com/Neeeooshka/gopher-club/internal/services/users"
+	"github.com/Neeeooshka/gopher-club/internal/services/models"
 )
 
-func (l *Postgres) GetWithdrawals(ctx context.Context, user users.User) ([]balance.Withdraw, error) {
+func (l *Postgres) GetWithdrawals(ctx context.Context, user models.User) ([]balance.Withdraw, error) {
 
 	var withdrawals []balance.Withdraw
 
@@ -53,7 +53,7 @@ func (l *Postgres) WithdrawBalance(ctx context.Context, w balance.Withdraw) erro
 	return tx.Commit()
 }
 
-func (l *Postgres) GetWithdrawn(ctx context.Context, user users.User) (float64, error) {
+func (l *Postgres) GetWithdrawn(ctx context.Context, user models.User) (float64, error) {
 
 	var withdrawn float64
 
