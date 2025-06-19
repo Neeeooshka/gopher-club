@@ -2,7 +2,6 @@ package users
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/mocks"
@@ -13,11 +12,10 @@ import (
 
 func TestLoginUserHandler(t *testing.T) {
 
-	ctx := context.Background()
 	mockRepo := &mocks.MockRepository{
 		Users: make(map[string]models.User),
 	}
-	service := NewUserService(ctx, mockRepo)
+	service := NewUserService(mockRepo)
 
 	testUser := models.User{
 		Login:       "newuser",
@@ -83,11 +81,11 @@ func TestLoginUserHandler(t *testing.T) {
 }
 
 func TestRegisterUserHandler(t *testing.T) {
-	ctx := context.Background()
+
 	mockRepo := &mocks.MockRepository{
 		Users: make(map[string]models.User),
 	}
-	service := NewUserService(ctx, mockRepo)
+	service := NewUserService(mockRepo)
 
 	tests := []struct {
 		name           string

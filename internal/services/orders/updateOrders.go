@@ -18,7 +18,6 @@ type OrdersUpdateRepository interface {
 }
 
 type OrdersUpdateService struct {
-	ctx            context.Context
 	logger         *zap.ZapLogger
 	opt            config.Options
 	storage        OrdersUpdateRepository
@@ -26,7 +25,7 @@ type OrdersUpdateService struct {
 	waitingOrders  []models.Order
 }
 
-func NewOrdersUpdateService(ctx context.Context, our interface{}, opt config.Options) (OrdersUpdateService, error) {
+func NewOrdersUpdateService(our interface{}, opt config.Options) (OrdersUpdateService, error) {
 
 	var ous OrdersUpdateService
 
@@ -35,6 +34,9 @@ func NewOrdersUpdateService(ctx context.Context, our interface{}, opt config.Opt
 	if !ok {
 		return ous, fmt.Errorf("2th argument expected OrdersUpdateRepository, got %T", our)
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 
 	orders, err := repo.ListWaitingOrders(ctx)
 	if err != nil {
@@ -46,11 +48,10 @@ func NewOrdersUpdateService(ctx context.Context, our interface{}, opt config.Opt
 		return ous, fmt.Errorf("unable to initialize logger: %w", err)
 	}
 
-	ous.ctx = ctx
 	ous.logger = logger
 	ous.opt = opt
 	ous.storage = repo
-	ous.updateInterval = time.Minute * 5
+	ous.updateInterval = time.Minute
 	ous.waitingOrders = orders
 
 	go ous.ordersUpdater()
@@ -67,13 +68,8 @@ func (o *OrdersUpdateService) ordersUpdater() {
 	timer := time.NewTicker(o.updateInterval)
 	defer timer.Stop()
 
-	for {
-		select {
-		case <-o.ctx.Done():
-			return
-		case <-timer.C:
-			o.updateOrders()
-		}
+	for range timer.C {
+		o.updateOrders()
 	}
 }
 
@@ -175,7 +171,10 @@ func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]models.
 		newWaitingOrders = append(newWaitingOrders, order)
 	}
 
-	if err := o.storage.UpdateOrders(o.ctx, ordersForUpdate); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	if err := o.storage.UpdateOrders(ctx, ordersForUpdate); err != nil {
 		o.logger.Debug("cannot update orders from the Loyalty calculation system", o.logger.Error(err))
 		return
 	}

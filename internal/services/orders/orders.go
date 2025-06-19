@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 const (
@@ -30,12 +31,11 @@ type OrdersService struct {
 	Errors        []error
 	Inited        bool
 	UserService   *users.UserService
-	ctx           context.Context
 	storage       OrdersRepository
 	updateService OrdersUpdateService
 }
 
-func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService, opt config.Options) OrdersService {
+func NewOrdersService(or interface{}, us *users.UserService, opt config.Options) OrdersService {
 
 	var os OrdersService
 
@@ -49,7 +49,7 @@ func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService
 		os.Errors = append(os.Errors, errors.New("UserService is unavailable"))
 	}
 
-	ous, err := NewOrdersUpdateService(ctx, or, opt)
+	ous, err := NewOrdersUpdateService(or, opt)
 
 	if err != nil {
 		os.Errors = append(os.Errors, errors.New("cannot initialize OrdersUpdateService"))
@@ -59,7 +59,6 @@ func NewOrdersService(ctx context.Context, or interface{}, us *users.UserService
 		return os
 	}
 
-	os.ctx = ctx
 	os.storage = ordersRepo
 	os.UserService = us
 	os.updateService = ous
@@ -120,7 +119,10 @@ func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	orders, err := o.storage.ListUserOrders(o.ctx, user)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+	defer cancel()
+
+	orders, err := o.storage.ListUserOrders(ctx, user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

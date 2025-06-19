@@ -10,6 +10,7 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 	"net/http"
+	"time"
 )
 
 type BalanceRepository interface {
@@ -21,13 +22,12 @@ type BalanceRepository interface {
 type BalanceService struct {
 	Inited        bool
 	storage       BalanceRepository
-	ctx           context.Context
 	Errors        []error
 	UserService   *users.UserService
 	OrdersService *orders.OrdersService
 }
 
-func NewBalanceService(ctx context.Context, or interface{}, us *users.UserService, os *orders.OrdersService) BalanceService {
+func NewBalanceService(or interface{}, us *users.UserService, os *orders.OrdersService) BalanceService {
 
 	var bs BalanceService
 
@@ -49,7 +49,6 @@ func NewBalanceService(ctx context.Context, or interface{}, us *users.UserServic
 		return bs
 	}
 
-	bs.ctx = ctx
 	bs.storage = balanceRepo
 	bs.UserService = us
 	bs.OrdersService = os
@@ -86,7 +85,10 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 
 	go func() {
 
-		err = b.storage.WithdrawBalance(b.ctx, withdraw)
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+		defer cancel()
+
+		err = b.storage.WithdrawBalance(ctx, withdraw)
 
 		if err != nil {
 			logger, _ := zap.NewZapLogger("debug")
@@ -106,7 +108,10 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	withdrawn, err := b.storage.GetWithdrawn(b.ctx, user)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+	defer cancel()
+
+	withdrawn, err := b.storage.GetWithdrawn(ctx, user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -137,7 +142,10 @@ func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	withdrawals, err := b.storage.GetWithdrawals(b.ctx, user)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+	defer cancel()
+
+	withdrawals, err := b.storage.GetWithdrawals(ctx, user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

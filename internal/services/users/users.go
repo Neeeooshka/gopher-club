@@ -10,6 +10,7 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"net/http"
+	"time"
 )
 
 type UserRepository interface {
@@ -21,10 +22,9 @@ type UserService struct {
 	Errors  []error
 	Inited  bool
 	storage UserRepository
-	ctx     context.Context
 }
 
-func NewUserService(ctx context.Context, ur interface{}) UserService {
+func NewUserService(ur interface{}) UserService {
 
 	var us UserService
 
@@ -38,7 +38,6 @@ func NewUserService(ctx context.Context, ur interface{}) UserService {
 		return us
 	}
 
-	us.ctx = ctx
 	us.storage = userRepo
 	us.Inited = true
 
@@ -69,7 +68,10 @@ func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 		Password: password,
 	}
 
-	err = u.storage.AddUser(u.ctx, user, salt)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+	defer cancel()
+
+	err = u.storage.AddUser(ctx, user, salt)
 	var ce *storage.ConflictUserError
 	if err != nil {
 		if errors.As(err, &ce) {
