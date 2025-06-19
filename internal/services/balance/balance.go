@@ -74,7 +74,7 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if !b.OrdersService.CheckLuhn(withdraw.OrderID) {
+	if !b.OrdersService.CheckLuhn(withdraw.OrderNum) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}

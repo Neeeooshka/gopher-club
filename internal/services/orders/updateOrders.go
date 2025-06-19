@@ -133,6 +133,9 @@ func (o *OrdersUpdateService) updateOrders() {
 		// if there changes
 		if order.Accrual != oi.Accrual || order.Status != oi.Status {
 
+			// save order memento
+			order.CreateMemento("beforeUpdate")
+
 			order.Accrual = oi.Accrual
 			order.Status = oi.Status
 

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 )
@@ -41,9 +42,27 @@ func (l *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+			// update order
 			_, err := stmt.ExecContext(ctx, order.Status, order.Accrual, order.ID)
 			if err != nil {
 				return err
+			}
+
+			// get accrual before update
+			orderMementoBefore := order.GetMemento("beforeUpdate")
+			if orderMementoBefore != nil {
+				tx.Rollback()
+				return fmt.Errorf("cannot get accrual before update")
+			}
+
+			// add balance to user
+			addBalance := order.Accrual - orderMementoBefore.GetAccrual()
+			if addBalance > 0 {
+				_, err = tx.ExecContext(ctx, "update gopher_users set balance = balance + $1 where user_id = $2", addBalance, order.ID)
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
 			}
 		}
 	}

@@ -38,12 +38,12 @@ func (l *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, "insert into gopher_withdrawals (user_id, order_id, sum) values ($1, $2, $3)", w.UserID, w.OrderID, w.Sum)
+	_, err = tx.ExecContext(ctx, "insert into gopher_withdrawals (user_id, num, sum) values ($1, $2, $3)", w.UserID, w.OrderNum, w.Sum)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, "update gopher_users set balance = balance + $1 where user_id = $2", w.Sum, w.UserID)
+	_, err = tx.ExecContext(ctx, "update gopher_users set balance = balance - $1 where user_id = $2", w.Sum, w.UserID)
 	if err != nil {
 		tx.Rollback()
 		return err

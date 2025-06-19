@@ -6,6 +6,7 @@ import (
 	"fmt"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"net/http"
+	"time"
 )
 
 type Postgres struct {
@@ -21,6 +22,14 @@ func NewPostgresStorage(conn string) (pgx *Postgres, err error) {
 	pgx = &Postgres{}
 
 	pgx.DB, err = sql.Open("pgx", conn)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err = pgx.Bootstrap(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +74,7 @@ func (l *Postgres) Bootstrap(ctx context.Context) error {
 			id SERIAL PRIMARY KEY,
 			user_id INTEGER NOT NULL REFERENCES gopher_users(id),
 			p_name TEXT,
-			p_value TEXT,
+			p_value TEXT
 		);
 		CREATE UNIQUE INDEX IF NOT EXISTS users_param_idx ON gopher_user_params (user_id, p_name);
 	`)
@@ -80,7 +89,7 @@ func (l *Postgres) Bootstrap(ctx context.Context) error {
 			num TEXT NOT NULL UNIQUE,
 			date_insert TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			accrual NUMERIC(10, 2) DEFAULT 0,
-			status TEXT DEFAULT 'NEW',
+			status TEXT DEFAULT 'NEW'
 		);
 		CREATE INDEX IF NOT EXISTS orders_user_id_idx ON gopher_orders (user_id);
 		CREATE UNIQUE INDEX IF NOT EXISTS orders_number_idx ON gopher_orders (num);
@@ -93,11 +102,11 @@ func (l *Postgres) Bootstrap(ctx context.Context) error {
 		CREATE TABLE IF NOT EXISTS gopher_withdrawals (
 			id SERIAL PRIMARY KEY,
 			user_id INTEGER NOT NULL REFERENCES gopher_users(id),
-			order_id TEXT NOT NULL REFERENCES gopher_orders(id),
+			num TEXT NOT NULL,
 			date_withdraw TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			sum NUMERIC(10, 2) NOT NULL CHECK (sum > 0)
 		);
-		CREATE UNIQUE INDEX IF NOT EXISTS withdrawals_user_order_idx ON gopher_withdrawals (user_id, order_id);
+		CREATE UNIQUE INDEX IF NOT EXISTS withdrawals_user_order_idx ON gopher_withdrawals (user_id, num);
 		CREATE INDEX IF NOT EXISTS withdrawals_user_id_idx ON gopher_withdrawals (user_id);
 		CREATE INDEX IF NOT EXISTS withdrawals_order_id_idx ON gopher_withdrawals (order_id);
 	`)
