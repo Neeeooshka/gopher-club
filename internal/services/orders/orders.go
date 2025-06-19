@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/config"
-	"github.com/Neeeooshka/gopher-club/internal/services/models"
+	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
+	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"io"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 const (
@@ -22,8 +22,8 @@ const (
 )
 
 type OrdersRepository interface {
-	AddOrder(string, int) (Order, error)
-	ListUserOrders(context.Context, models.User) ([]Order, error)
+	AddOrder(string, int) (models.Order, error)
+	ListUserOrders(context.Context, models.User) ([]models.Order, error)
 }
 
 type OrdersService struct {
@@ -91,8 +91,8 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	order, err := o.storage.AddOrder(orderNumber, user.ID)
-	var cue *ConflictOrderError
-	var coue *ConflictOrderUserError
+	var cue *storage.ConflictOrderError
+	var coue *storage.ConflictOrderUserError
 	if err != nil {
 		if errors.As(err, &cue) {
 			w.WriteHeader(http.StatusOK)
@@ -160,38 +160,4 @@ func (o *OrdersService) CheckLuhn(orderNumber string) bool {
 		sum += digit
 	}
 	return sum%10 == 0
-}
-
-type Order struct {
-	ID         int       `db:"id"`
-	UserID     int       `db:"user_id"`
-	Number     string    `db:"num" json:"number"`
-	DateInsert time.Time `db:"date_insert" json:"uploaded_at"`
-	Accrual    float64   `db:"accrual" json:"accrual,omitempty"`
-	Status     string    `db:"status" json:"status"`
-}
-
-type ConflictOrderError struct {
-	orderID string
-}
-
-func NewConflictOrderError(orderID string) *ConflictOrderError {
-	return &ConflictOrderError{orderID}
-}
-
-func (e *ConflictOrderError) Error() string {
-	return fmt.Sprintf("Order %s already exsists", e.orderID)
-}
-
-type ConflictOrderUserError struct {
-	userID  int
-	orderID string
-}
-
-func NewConflictOrderUserError(userID int, orderID string) *ConflictOrderUserError {
-	return &ConflictOrderUserError{userID, orderID}
-}
-
-func (e *ConflictOrderUserError) Error() string {
-	return fmt.Sprintf("Order %s already exsists belongs to another user", e.orderID)
 }

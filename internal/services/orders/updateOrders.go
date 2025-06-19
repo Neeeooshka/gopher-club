@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
+	"github.com/Neeeooshka/gopher-club/internal/models"
 	"net/http"
 	"resty.dev/v3"
 	"time"
 )
 
 type OrdersUpdateRepository interface {
-	UpdateOrders(context.Context, []Order) error
-	ListWaitingOrders(context.Context) ([]Order, error)
+	UpdateOrders(context.Context, []models.Order) error
+	ListWaitingOrders(context.Context) ([]models.Order, error)
 }
 
 type OrdersUpdateService struct {
@@ -22,7 +23,7 @@ type OrdersUpdateService struct {
 	opt            config.Options
 	storage        OrdersUpdateRepository
 	updateInterval time.Duration
-	waitingOrders  []Order
+	waitingOrders  []models.Order
 }
 
 func NewOrdersUpdateService(ctx context.Context, our interface{}, opt config.Options) (OrdersUpdateService, error) {
@@ -57,7 +58,7 @@ func NewOrdersUpdateService(ctx context.Context, our interface{}, opt config.Opt
 	return ous, nil
 }
 
-func (o *OrdersUpdateService) AddWaitingOrder(order Order) {
+func (o *OrdersUpdateService) AddWaitingOrder(order models.Order) {
 	o.waitingOrders = append(o.waitingOrders, order)
 }
 
@@ -85,7 +86,7 @@ func (o *OrdersUpdateService) updateOrders() {
 		return
 	}
 
-	dataCh := make(chan Order)
+	dataCh := make(chan models.Order)
 	defer close(dataCh)
 
 	go o.updateOrdersProcessor(dataCh)
@@ -140,9 +141,9 @@ func (o *OrdersUpdateService) updateOrders() {
 	}
 }
 
-func (o *OrdersUpdateService) updateOrdersProcessor(dataCh chan Order) {
+func (o *OrdersUpdateService) updateOrdersProcessor(dataCh chan models.Order) {
 
-	ordersForUpdateMap := make(map[string]Order)
+	ordersForUpdateMap := make(map[string]models.Order)
 
 	for order := range dataCh {
 		ordersForUpdateMap[order.Number] = order
@@ -153,10 +154,10 @@ func (o *OrdersUpdateService) updateOrdersProcessor(dataCh chan Order) {
 	}
 }
 
-func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]Order) {
+func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]models.Order) {
 
-	var ordersForUpdate []Order
-	newWaitingOrders := make([]Order, 0, len(o.waitingOrders))
+	var ordersForUpdate []models.Order
+	newWaitingOrders := make([]models.Order, 0, len(o.waitingOrders))
 
 	for _, order := range o.waitingOrders {
 		if ord, ok := ordersForUpdateMap[order.Number]; ok {

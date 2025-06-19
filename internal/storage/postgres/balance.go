@@ -2,13 +2,12 @@ package postgres
 
 import (
 	"context"
-	"github.com/Neeeooshka/gopher-club/internal/services/balance"
-	"github.com/Neeeooshka/gopher-club/internal/services/models"
+	"github.com/Neeeooshka/gopher-club/internal/models"
 )
 
-func (l *Postgres) GetWithdrawals(ctx context.Context, user models.User) ([]balance.Withdraw, error) {
+func (l *Postgres) GetWithdrawals(ctx context.Context, user models.User) ([]models.Withdraw, error) {
 
-	var withdrawals []balance.Withdraw
+	var withdrawals []models.Withdraw
 
 	rows, err := l.DB.QueryContext(ctx, "select * from gopher_withdrawals where user_id = $1 order by date_withdraw desc", user.ID)
 	if err != nil {
@@ -21,7 +20,7 @@ func (l *Postgres) GetWithdrawals(ctx context.Context, user models.User) ([]bala
 	defer rows.Close()
 
 	for rows.Next() {
-		var withdraw balance.Withdraw
+		var withdraw models.Withdraw
 		err := rows.Scan(&withdraw)
 		if err != nil {
 			return nil, err
@@ -31,7 +30,7 @@ func (l *Postgres) GetWithdrawals(ctx context.Context, user models.User) ([]bala
 	return withdrawals, nil
 }
 
-func (l *Postgres) WithdrawBalance(ctx context.Context, w balance.Withdraw) error {
+func (l *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error {
 
 	tx, err := l.DB.BeginTx(ctx, nil)
 	if err != nil {

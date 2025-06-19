@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/Neeeooshka/gopher-club/internal/services/models"
+	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/mocks"
 	"net/http"
 	"net/http/httptest"

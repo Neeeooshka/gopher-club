@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 	"errors"
-	"github.com/Neeeooshka/gopher-club/internal/services/models"
+	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 )
 

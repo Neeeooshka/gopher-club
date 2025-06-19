@@ -3,13 +3,13 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"github.com/Neeeooshka/gopher-club/internal/services/models"
-	"github.com/Neeeooshka/gopher-club/internal/services/orders"
+	"github.com/Neeeooshka/gopher-club/internal/models"
+	"github.com/Neeeooshka/gopher-club/internal/storage"
 )
 
-func (l *Postgres) AddOrder(number string, userID int) (orders.Order, error) {
+func (l *Postgres) AddOrder(number string, userID int) (models.Order, error) {
 
-	var order orders.Order
+	var order models.Order
 	var isNew bool
 
 	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_orders (user_id, num)\n    VALUES ($1, $2)\n    ON CONFLICT (num) DO NOTHING\n    RETURNING *, 1 AS is_new\n)\nSELECT * FROM ins\nUNION  ALL\nSELECT *, 0 AS is_new FROM gopher_orders WHERE num = $2\nLIMIT 1", userID, number)
@@ -28,15 +28,15 @@ func (l *Postgres) AddOrder(number string, userID int) (orders.Order, error) {
 
 	if !isNew {
 		if order.UserID == userID {
-			return order, orders.NewConflictOrderError(number)
+			return order, storage.NewConflictOrderError(number)
 		}
-		return order, orders.NewConflictOrderUserError(order.UserID, number)
+		return order, storage.NewConflictOrderUserError(order.UserID, number)
 	}
 
 	return order, nil
 }
 
-func (l *Postgres) ListUserOrders(ctx context.Context, user models.User) ([]orders.Order, error) {
+func (l *Postgres) ListUserOrders(ctx context.Context, user models.User) ([]models.Order, error) {
 
 	rows, err := l.DB.QueryContext(ctx, "select * from gopher_orders where user_id = $1 order by date_insert desc", user.ID)
 	if err != nil {
@@ -48,12 +48,12 @@ func (l *Postgres) ListUserOrders(ctx context.Context, user models.User) ([]orde
 	return l.extractOrders(rows)
 }
 
-func (l *Postgres) extractOrders(rows *sql.Rows) ([]orders.Order, error) {
+func (l *Postgres) extractOrders(rows *sql.Rows) ([]models.Order, error) {
 
-	var result []orders.Order
+	var result []models.Order
 
 	for rows.Next() {
-		var o orders.Order
+		var o models.Order
 		if err := rows.Scan(&o); err != nil {
 			return nil, err
 		}

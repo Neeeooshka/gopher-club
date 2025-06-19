@@ -2,10 +2,11 @@ package postgres
 
 import (
 	"context"
+	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 )
 
-func (l *Postgres) ListWaitingOrders(ctx context.Context) ([]orders.Order, error) {
+func (l *Postgres) ListWaitingOrders(ctx context.Context) ([]models.Order, error) {
 
 	finishedStates := []string{orders.StatusInvalid, orders.StatusProcessed}
 
@@ -19,7 +20,7 @@ func (l *Postgres) ListWaitingOrders(ctx context.Context) ([]orders.Order, error
 	return l.extractOrders(rows)
 }
 
-func (l *Postgres) UpdateOrders(ctx context.Context, orders []orders.Order) error {
+func (l *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) error {
 
 	tx, err := l.DB.BeginTx(ctx, nil)
 	if err != nil {

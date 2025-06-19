@@ -6,16 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
-	"github.com/Neeeooshka/gopher-club/internal/services/models"
+	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 	"net/http"
-	"time"
 )
 
 type BalanceRepository interface {
-	WithdrawBalance(context.Context, Withdraw) error
-	GetWithdrawals(context.Context, models.User) ([]Withdraw, error)
+	WithdrawBalance(context.Context, models.Withdraw) error
+	GetWithdrawals(context.Context, models.User) ([]models.Withdraw, error)
 	GetWithdrawn(context.Context, models.User) (float64, error)
 }
 
@@ -68,7 +67,7 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var withdraw Withdraw
+	var withdraw models.Withdraw
 
 	if err := json.NewDecoder(r.Body).Decode(&withdraw); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -155,12 +154,4 @@ func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *htt
 	}
 
 	w.WriteHeader(http.StatusOK)
-}
-
-type Withdraw struct {
-	ID           int       `db:"id"`
-	UserID       int       `db:"user_id"`
-	OrderID      string    `db:"order_id" json:"order"`
-	DateWithdraw time.Time `db:"date_withdraw" json:"processed_at"`
-	Sum          float64   `db:"sum" json:"sum"`
 }

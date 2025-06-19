@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"github.com/Neeeooshka/gopher-club/internal/services/models"
+	"github.com/Neeeooshka/gopher-club/internal/models"
 )
 
 type MockRepository struct {
