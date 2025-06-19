@@ -2,27 +2,29 @@ package users
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
+	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/internal/storage/mocks"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
+var testUser = models.User{
+	Login:       "newuser",
+	Password:    "bf9760c303b7fbb093352d0e892c054c7b7a1db4fa26d690511cdd9602cdec5f",
+	Credentials: "f3dcb06e549ee9732d9f86579310ad297151343fff0089b2ad1ada4fd0aff8c6e4ef359306dda5a77d0028235cacf704",
+}
+
 func TestLoginUserHandler(t *testing.T) {
 
-	mockRepo := &mocks.MockRepository{
-		Users: make(map[string]models.User),
-	}
-	service := NewUserService(mockRepo)
-
-	testUser := models.User{
-		Login:       "newuser",
-		Password:    "bf9760c303b7fbb093352d0e892c054c7b7a1db4fa26d690511cdd9602cdec5f",
-		Credentials: "f3dcb06e549ee9732d9f86579310ad297151343fff0089b2ad1ada4fd0aff8c6e4ef359306dda5a77d0028235cacf704",
-	}
-	mockRepo.Users[testUser.Login] = testUser
+	repo := mocks.NewUserRepository(t)
+	service := NewUserService(repo)
 
 	tests := []struct {
 		name           string
@@ -56,6 +58,9 @@ func TestLoginUserHandler(t *testing.T) {
 		},
 	}
 
+	repo.On("GetUserByLogin", testUser.Login).Return(testUser, nil)
+	repo.On("GetUserByLogin", "nonexistent").Return(models.User{}, fmt.Errorf("user not found"))
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
@@ -69,23 +74,21 @@ func TestLoginUserHandler(t *testing.T) {
 
 			service.LoginUserHandler(rec, req)
 
-			if rec.Code != tt.expectedStatus {
-				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Code)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+			if tt.expectedStatus == http.StatusOK {
+				auth := rec.Header().Get("Authorization")
+				assert.NotEmpty(t, auth)
 			}
 
-			if tt.expectedStatus == http.StatusOK && rec.Header().Get("Authorization") == "" {
-				t.Error("expected Authorization header")
-			}
+			//repo.AssertExpectations(t)
 		})
 	}
 }
 
 func TestRegisterUserHandler(t *testing.T) {
 
-	mockRepo := &mocks.MockRepository{
-		Users: make(map[string]models.User),
-	}
-	service := NewUserService(mockRepo)
+	repo := mocks.NewUserRepository(t)
+	svs := NewUserService(repo)
 
 	tests := []struct {
 		name           string
@@ -113,10 +116,19 @@ func TestRegisterUserHandler(t *testing.T) {
 		},
 	}
 
-	mockRepo.Users["existinguser"] = models.User{Login: "existinguser"}
+	ctx := context.Background()
+
+	repo.On("AddUser", ctx, models.User{Login: testUser.Login, Password: testUser.Password}, testUser.Credentials).Return(nil)
+	repo.On("GetUserByLogin", testUser.Login).Return(testUser, nil)
+
+	ce := &storage.ConflictUserError{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			if tt.login == "existinguser" {
+				repo.On("AddUser", ctx, gomock.Any(), gomock.Any()).Return(ce)
+			}
 
 			creds := credentials{
 				Login:    tt.login,
@@ -126,18 +138,14 @@ func TestRegisterUserHandler(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewReader(body))
 			rec := httptest.NewRecorder()
 
-			service.RegisterUserHandler(rec, req)
+			svs.RegisterUserHandler(rec, req)
 
-			if rec.Code != tt.expectedStatus {
-				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Code)
-			}
-
+			assert.Equal(t, tt.expectedStatus, rec.Code)
 			if tt.expectedStatus == http.StatusOK {
-				_, err := mockRepo.GetUserByLogin(tt.login)
-				if err != nil {
-					t.Errorf("user %s was not saved", tt.login)
-				}
+				assert.NotEmpty(t, rec.Header().Get("Authorization"))
 			}
+
+			repo.AssertExpectations(t)
 		})
 	}
 }

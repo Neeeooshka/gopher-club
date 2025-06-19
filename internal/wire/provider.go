@@ -20,7 +20,7 @@ func ProvidePostgresStorage(cfg config.Options) (storage.Storage, error) {
 	return postgres.NewPostgresStorage(cfg.DB.String())
 }
 
-func ProvideMockStorage(cfg config.Options) (storage.Storage, error) {
+func ProvideMockStorage() (storage.Storage, error) {
 	return &mocks.MockRepository{}, nil
 }
 
