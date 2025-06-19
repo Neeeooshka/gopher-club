@@ -108,7 +108,7 @@ func (l *Postgres) Bootstrap(ctx context.Context) error {
 		);
 		CREATE UNIQUE INDEX IF NOT EXISTS withdrawals_user_order_idx ON gopher_withdrawals (user_id, num);
 		CREATE INDEX IF NOT EXISTS withdrawals_user_id_idx ON gopher_withdrawals (user_id);
-		CREATE INDEX IF NOT EXISTS withdrawals_order_id_idx ON gopher_withdrawals (order_id);
+		CREATE INDEX IF NOT EXISTS withdrawals_num_idx ON gopher_withdrawals (num);
 	`)
 	if err != nil {
 		return fmt.Errorf("failed to create gopher_withdrawals table: %w", err)

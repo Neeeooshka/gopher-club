@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"github.com/Neeeooshka/gopher-club/internal/app"
 	"github.com/Neeeooshka/gopher-club/internal/compressor"
@@ -9,7 +10,6 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/logger"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
-	"github.com/Neeeooshka/gopher-club/internal/storage/mocks"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres"
 	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi/v5"
@@ -29,8 +29,8 @@ func main() {
 			panic(err)
 		}
 	} else {
-		//panic(errors.New("DB connection is not set"))
-		store = &mocks.MockRepository{}
+		panic(errors.New("DB connection is not set"))
+		//store = &mocks.MockRepository{}
 	}
 
 	defer store.Close()

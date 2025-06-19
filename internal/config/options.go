@@ -86,6 +86,7 @@ func NewOptions() Options {
 	return Options{
 		ServerAddress:  ServerAddress{Host: "localhost", Port: 8080},
 		AccrualAddress: AccrualSystem{url.URL{Host: "localhost:8080", Scheme: "http"}},
-		DB:             DB{"user=postgres password=postgres dbname=praktikum host=PostgreSQL-17 port=5432 sslmode=disable"},
+		//DB:             DB{"user=postgres password=postgres dbname=praktikum host=PostgreSQL-17 port=5432 sslmode=disable"},
+		DB: DB{},
 	}
 }

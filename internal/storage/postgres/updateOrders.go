@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
-	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 )
 
 func (l *Postgres) ListWaitingOrders(ctx context.Context) ([]models.Order, error) {
 
-	finishedStates := []string{orders.StatusInvalid, orders.StatusProcessed}
-
-	rows, err := l.DB.QueryContext(ctx, "select * from gopher_orders where status not in ($1)", finishedStates)
+	rows, err := l.DB.QueryContext(ctx, "select * from gopher_orders where status not in ('INVALID', 'PROCESSED')")
 	if err != nil {
 		return nil, err
 	}
