@@ -8,7 +8,6 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/logger"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
-	"github.com/Neeeooshka/gopher-club/internal/storage/mocks"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres"
 )
 
@@ -18,10 +17,6 @@ func ProvideConfig() config.Options {
 
 func ProvidePostgresStorage(cfg config.Options) (storage.Storage, error) {
 	return postgres.NewPostgresStorage(cfg.DB.String())
-}
-
-func ProvideMockStorage() (storage.Storage, error) {
-	return &mocks.MockRepository{}, nil
 }
 
 func ProvideZapLogger() (logger.Logger, error) {
