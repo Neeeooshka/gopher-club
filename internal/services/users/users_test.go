@@ -2,14 +2,13 @@ package users
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/internal/storage/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,6 +23,10 @@ var testUser = models.User{
 func TestLoginUserHandler(t *testing.T) {
 
 	repo := mocks.NewUserRepository(t)
+
+	repo.On("GetUserByLogin", testUser.Login).Return(testUser, nil)
+	repo.On("GetUserByLogin", "nonexistent").Return(models.User{}, errors.New("user not found"))
+
 	service := NewUserService(repo)
 
 	tests := []struct {
@@ -58,9 +61,6 @@ func TestLoginUserHandler(t *testing.T) {
 		},
 	}
 
-	repo.On("GetUserByLogin", testUser.Login).Return(testUser, nil)
-	repo.On("GetUserByLogin", "nonexistent").Return(models.User{}, fmt.Errorf("user not found"))
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
@@ -79,15 +79,19 @@ func TestLoginUserHandler(t *testing.T) {
 				auth := rec.Header().Get("Authorization")
 				assert.NotEmpty(t, auth)
 			}
-
-			//repo.AssertExpectations(t)
 		})
 	}
 }
 
 func TestRegisterUserHandler(t *testing.T) {
 
+	ce := &storage.ConflictUserError{}
+
 	repo := mocks.NewUserRepository(t)
+	repo.On("AddUser", mock.Anything, mock.MatchedBy(func(u models.User) bool { return u.Login == testUser.Login }), mock.Anything).Return(nil)
+	repo.On("AddUser", mock.Anything, mock.MatchedBy(func(u models.User) bool { return u.Login == "existinguser" }), mock.Anything).Return(ce)
+	repo.On("GetUserByLogin", testUser.Login).Return(testUser, nil)
+
 	svs := NewUserService(repo)
 
 	tests := []struct {
@@ -116,19 +120,8 @@ func TestRegisterUserHandler(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-
-	repo.On("AddUser", ctx, models.User{Login: testUser.Login, Password: testUser.Password}, testUser.Credentials).Return(nil)
-	repo.On("GetUserByLogin", testUser.Login).Return(testUser, nil)
-
-	ce := &storage.ConflictUserError{}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			if tt.login == "existinguser" {
-				repo.On("AddUser", ctx, gomock.Any(), gomock.Any()).Return(ce)
-			}
 
 			creds := credentials{
 				Login:    tt.login,
@@ -144,8 +137,8 @@ func TestRegisterUserHandler(t *testing.T) {
 			if tt.expectedStatus == http.StatusOK {
 				assert.NotEmpty(t, rec.Header().Get("Authorization"))
 			}
-
-			repo.AssertExpectations(t)
 		})
 	}
+
+	repo.AssertExpectations(t)
 }
