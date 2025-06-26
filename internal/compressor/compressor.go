@@ -1,6 +1,7 @@
 package compressor
 
 import (
+	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"io"
 	"net/http"
 	"strings"
@@ -86,7 +87,12 @@ func IncludeCompressor(h http.HandlerFunc, c Compressor) http.HandlerFunc {
 				return
 			}
 			r.Body = cr
-			defer cr.Close()
+			defer func() {
+				if err := cr.Close(); err != nil {
+					logger, _ := zap.NewZapLogger("debug")
+					logger.Debug("failed to close compressor reader", logger.Error(err))
+				}
+			}()
 		}
 
 		acceptEncoding := r.Header.Get("Accept-Encoding")
@@ -95,7 +101,12 @@ func IncludeCompressor(h http.HandlerFunc, c Compressor) http.HandlerFunc {
 			w.Header().Set("Content-Encoding", c.GetEncoding())
 			cw := newCompressorWriter(w, c)
 			ow = cw
-			defer cw.Close()
+			defer func() {
+				if err := cw.Close(); err != nil {
+					logger, _ := zap.NewZapLogger("debug")
+					logger.Debug("failed to close compressor writer", logger.Error(err))
+				}
+			}()
 		}
 
 		h.ServeHTTP(ow, r)

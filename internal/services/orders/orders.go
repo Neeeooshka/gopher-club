@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/config"
+	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
@@ -81,7 +82,12 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			logger, _ := zap.NewZapLogger("debug")
+			logger.Debug("failed to close request body reader", logger.Error(err))
+		}
+	}()
 
 	orderNumber := string(body)
 	if !o.CheckLuhn(orderNumber) {

@@ -94,7 +94,12 @@ func (o *OrdersUpdateService) updateOrders() {
 	}
 
 	client := resty.New()
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			logger, _ := zap.NewZapLogger("debug")
+			logger.Debug("failed to close resty client", logger.Error(err))
+		}
+	}()
 
 	r := client.R()
 

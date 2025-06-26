@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"github.com/caarlos0/env/v6"
 )
 
@@ -14,18 +15,30 @@ func GetOptions() Options {
 	flag.Var(&opt.DB, "d", "postgres connection string")
 
 	flag.Parse()
-	env.Parse(&cfg)
+	err := env.Parse(&cfg)
+	if err != nil {
+		panic(fmt.Errorf("error parsing config: %s", err))
+	}
 
 	if cfg.ServerAddress != "" {
-		opt.ServerAddress.Set(cfg.ServerAddress)
+		err = opt.ServerAddress.Set(cfg.ServerAddress)
+		if err != nil {
+			panic(fmt.Errorf("error setting ServerAddress: %s", err))
+		}
 	}
 
 	if cfg.AccrualAddress != "" {
-		opt.AccrualAddress.Set(cfg.AccrualAddress)
+		err = opt.AccrualAddress.Set(cfg.AccrualAddress)
+		if err != nil {
+			panic(fmt.Errorf("error setting AccrualAddress: %s", err))
+		}
 	}
 
 	if cfg.DB != "" {
-		opt.DB.Set(cfg.DB)
+		err = opt.DB.Set(cfg.DB)
+		if err != nil {
+			panic(fmt.Errorf("error setting DB: %s", err))
+		}
 	}
 
 	return opt

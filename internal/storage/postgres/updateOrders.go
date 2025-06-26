@@ -2,7 +2,10 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 )
@@ -24,7 +27,12 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 		return fmt.Errorf("could not start transaction: %w", err)
 	}
 
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			logger, _ := zap.NewZapLogger("debug")
+			logger.Debug("failed to rollback transaction", logger.Error(err))
+		}
+	}()
 
 	rows := make([]sqlc.UpdateOrdersParams, len(orders))
 	for i, order := range orders {
