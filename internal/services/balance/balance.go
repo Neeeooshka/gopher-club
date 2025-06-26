@@ -16,7 +16,7 @@ import (
 type BalanceRepository interface {
 	WithdrawBalance(context.Context, models.Withdraw) error
 	GetWithdrawals(context.Context, models.User) ([]models.Withdraw, error)
-	GetWithdrawn(context.Context, models.User) (float64, error)
+	GetWithdrawn(context.Context, models.User) (float32, error)
 }
 
 type BalanceService struct {
@@ -122,8 +122,8 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	balance := struct {
-		Balance  float64 `json:"current"`
-		Withdraw float64 `json:"withdrawn"`
+		Balance  float32 `json:"current"`
+		Withdraw float32 `json:"withdrawn"`
 	}{
 		Balance:  user.Balance,
 		Withdraw: withdrawn,

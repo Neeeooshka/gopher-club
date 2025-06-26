@@ -63,7 +63,7 @@ type GetUserByLoginRow struct {
 	ID          int
 	Login       string
 	Password    string
-	Balance     float64
+	Balance     float32
 	Credentials string
 }
 
@@ -85,7 +85,7 @@ update gopher_users set balance = balance + $1 where id = $2
 `
 
 type UpdateBalanceParams struct {
-	Balance float64
+	Balance float32
 	ID      int
 }
 

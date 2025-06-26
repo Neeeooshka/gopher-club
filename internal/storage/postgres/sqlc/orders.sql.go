@@ -32,7 +32,7 @@ type AddOrderRow struct {
 	UserID     int
 	Num        string
 	DateInsert time.Time
-	Accrual    float64
+	Accrual    float32
 	Status     string
 	IsNew      bool
 }

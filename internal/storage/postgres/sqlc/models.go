@@ -13,7 +13,7 @@ type GopherOrder struct {
 	UserID     int
 	Num        string
 	DateInsert time.Time
-	Accrual    float64
+	Accrual    float32
 	Status     string
 }
 
@@ -21,7 +21,7 @@ type GopherUser struct {
 	ID       int
 	Login    string
 	Password string
-	Balance  float64
+	Balance  float32
 }
 
 type GopherUserParam struct {
@@ -36,5 +36,5 @@ type GopherWithdrawal struct {
 	UserID       int
 	Num          string
 	DateWithdraw time.Time
-	Sum          float64
+	Sum          float32
 }

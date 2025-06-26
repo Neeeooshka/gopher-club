@@ -59,7 +59,7 @@ func (s *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error
 		return fmt.Errorf("could not withdraw balance: %w", err)
 	}
 
-	err = qtx.UpdateBalance(ctx, sqlc.UpdateBalanceParams{Balance: w.Sum.Neg(), ID: w.UserID})
+	err = qtx.UpdateBalance(ctx, sqlc.UpdateBalanceParams{Balance: w.Sum * -1, ID: w.UserID})
 	if err != nil {
 		return fmt.Errorf("could not update user balance: %w", err)
 	}
@@ -67,7 +67,7 @@ func (s *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error
 	return tx.Commit(ctx)
 }
 
-func (s *Postgres) GetWithdrawn(ctx context.Context, user models.User) (decimal.Decimal, error) {
+func (s *Postgres) GetWithdrawn(ctx context.Context, user models.User) (float32, error) {
 
 	w, err := s.sqlc.GetWithdrawn(ctx, user.ID)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {

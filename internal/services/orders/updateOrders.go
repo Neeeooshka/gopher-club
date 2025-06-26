@@ -89,9 +89,9 @@ func (o *OrdersUpdateService) updateOrders() {
 	go o.updateOrdersProcessor(dataCh)
 
 	type orderInfo struct {
-		Number  string          `json:"order"`
-		Status  string          `json:"status"`
-		Accrual decimal.Decimal `json:"accrual"`
+		Number  string  `json:"order"`
+		Status  string  `json:"status"`
+		Accrual float32 `json:"accrual"`
 	}
 
 	client := resty.New()

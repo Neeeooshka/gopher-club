@@ -28,7 +28,7 @@ type UpdateOrdersBatchResults struct {
 
 type UpdateOrdersParams struct {
 	Status  string
-	Accrual float64
+	Accrual float32
 	ID      int
 }
 

@@ -8,7 +8,6 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 	"github.com/jackc/pgx/v5"
-	"github.com/shopspring/decimal"
 )
 
 func (s *Postgres) ListWaitingOrders(ctx context.Context) ([]models.Order, error) {
@@ -58,8 +57,8 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 		}
 
 		// add balance to user
-		addBalance := order.Accrual.Sub(orderMementoBefore.GetAccrual())
-		if !addBalance.Equal(decimal.Zero) {
+		addBalance := order.Accrual - orderMementoBefore.GetAccrual()
+		if addBalance != 0 {
 			err = s.sqlc.UpdateBalance(ctx, sqlc.UpdateBalanceParams{
 				Balance: addBalance,
 				ID:      order.ID,

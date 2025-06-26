@@ -5,5 +5,5 @@ type User struct {
 	Login       string  `db:"login"`
 	Password    string  `db:"password"`
 	Credentials string  `db:"credentials"`
-	Balance     float64 `db:"balance"`
+	Balance     float32 `db:"balance"`
 }

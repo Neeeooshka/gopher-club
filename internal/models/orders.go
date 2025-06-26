@@ -7,7 +7,7 @@ type Order struct {
 	UserID     int       `db:"user_id"`
 	Number     string    `db:"num" json:"number"`
 	DateInsert time.Time `db:"date_insert" json:"uploaded_at"`
-	Accrual    float64   `db:"accrual" json:"accrual,omitempty"`
+	Accrual    float32   `db:"accrual" json:"accrual,omitempty"`
 	Status     string    `db:"status" json:"status"`
 	mementos   map[string]*orderMemento
 }
@@ -25,10 +25,10 @@ func (o *Order) GetMemento(state string) *orderMemento {
 }
 
 type orderMemento struct {
-	accrual float64
+	accrual float32
 	status  string
 }
 
-func (m *orderMemento) GetAccrual() float64 {
+func (m *orderMemento) GetAccrual() float32 {
 	return m.accrual
 }
