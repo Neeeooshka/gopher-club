@@ -1,14 +1,17 @@
 package models
 
-import "time"
+import (
+	"github.com/shopspring/decimal"
+	"time"
+)
 
 type Order struct {
-	ID         int       `db:"id"`
-	UserID     int       `db:"user_id"`
-	Number     string    `db:"num" json:"number"`
-	DateInsert time.Time `db:"date_insert" json:"uploaded_at"`
-	Accrual    float64   `db:"accrual" json:"accrual,omitempty"`
-	Status     string    `db:"status" json:"status"`
+	ID         int             `db:"id"`
+	UserID     int             `db:"user_id"`
+	Number     string          `db:"num" json:"number"`
+	DateInsert time.Time       `db:"date_insert" json:"uploaded_at"`
+	Accrual    decimal.Decimal `db:"accrual" json:"accrual,omitempty"`
+	Status     string          `db:"status" json:"status"`
 	mementos   map[string]*orderMemento
 }
 
@@ -25,10 +28,10 @@ func (o *Order) GetMemento(state string) *orderMemento {
 }
 
 type orderMemento struct {
-	accrual float64
+	accrual decimal.Decimal
 	status  string
 }
 
-func (m *orderMemento) GetAccrual() float64 {
+func (m *orderMemento) GetAccrual() decimal.Decimal {
 	return m.accrual
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
+	"github.com/shopspring/decimal"
 	"net/http"
 	"time"
 )
@@ -16,7 +17,7 @@ import (
 type BalanceRepository interface {
 	WithdrawBalance(context.Context, models.Withdraw) error
 	GetWithdrawals(context.Context, models.User) ([]models.Withdraw, error)
-	GetWithdrawn(context.Context, models.User) (float64, error)
+	GetWithdrawn(context.Context, models.User) (decimal.Decimal, error)
 }
 
 type BalanceService struct {
@@ -78,7 +79,7 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if user.Balance < withdraw.Sum {
+	if user.Balance.Compare(withdraw.Sum) == -1 {
 		w.WriteHeader(http.StatusPaymentRequired)
 		return
 	}
@@ -122,8 +123,8 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	balance := struct {
-		Balance  float64 `json:"current"`
-		Withdraw float64 `json:"withdrawn"`
+		Balance  decimal.Decimal `json:"current"`
+		Withdraw decimal.Decimal `json:"withdrawn"`
 	}{
 		Balance:  user.Balance,
 		Withdraw: withdrawn,

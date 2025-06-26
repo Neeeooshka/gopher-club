@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	decimal "github.com/shopspring/decimal"
 )
 
 const addCredentials = `-- name: AddCredentials :exec
@@ -63,7 +65,7 @@ type GetUserByLoginRow struct {
 	ID          int
 	Login       string
 	Password    string
-	Balance     float64
+	Balance     decimal.Decimal
 	Credentials string
 }
 
@@ -85,7 +87,7 @@ update gopher_users set balance = balance + $1 where id = $2
 `
 
 type UpdateBalanceParams struct {
-	Balance float64
+	Balance decimal.Decimal
 	ID      int
 }
 

@@ -6,6 +6,8 @@ package sqlc
 
 import (
 	"time"
+
+	decimal "github.com/shopspring/decimal"
 )
 
 type GopherOrder struct {
@@ -13,7 +15,7 @@ type GopherOrder struct {
 	UserID     int
 	Num        string
 	DateInsert time.Time
-	Accrual    float64
+	Accrual    decimal.Decimal
 	Status     string
 }
 
@@ -21,7 +23,7 @@ type GopherUser struct {
 	ID       int
 	Login    string
 	Password string
-	Balance  float64
+	Balance  decimal.Decimal
 }
 
 type GopherUserParam struct {
@@ -36,5 +38,5 @@ type GopherWithdrawal struct {
 	UserID       int
 	Num          string
 	DateWithdraw time.Time
-	Sum          float64
+	Sum          decimal.Decimal
 }

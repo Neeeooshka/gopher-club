@@ -12,11 +12,17 @@ overrides:
         go_type: string
       - db_type: pg_catalog.numeric
         engine: postgresql
-        go_type: float64
+        go_type:
+          import: "github.com/shopspring/decimal"
+          package: decimal
+          type: Decimal
       - db_type: pg_catalog.numeric
         engine: postgresql
         nullable: true
-        go_type: float64
+        go_type:
+          import: "github.com/shopspring/decimal"
+          package: decimal
+          type: Decimal
       - db_type: serial
         engine: postgresql
         go_type: int
@@ -25,7 +31,10 @@ overrides:
         go_type: int
       - db_type: bigint
         engine: postgresql
-        go_type: float64
+        go_type:
+          import: "github.com/shopspring/decimal"
+          package: decimal
+          type: Decimal
 sql:
   - schema: "internal/storage/postgres/migrations/"
     engine: "postgresql"
