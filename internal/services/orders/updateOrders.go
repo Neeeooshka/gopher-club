@@ -7,6 +7,7 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
+	"github.com/shopspring/decimal"
 	"net/http"
 	"resty.dev/v3"
 	"time"
@@ -51,7 +52,7 @@ func NewOrdersUpdateService(our interface{}, opt config.Options) (OrdersUpdateSe
 	ous.logger = logger
 	ous.opt = opt
 	ous.storage = repo
-	ous.updateInterval = time.Minute
+	ous.updateInterval = time.Second * 5
 	ous.waitingOrders = orders
 
 	go ous.ordersUpdater()
@@ -88,9 +89,9 @@ func (o *OrdersUpdateService) updateOrders() {
 	go o.updateOrdersProcessor(dataCh)
 
 	type orderInfo struct {
-		Number  string  `json:"order"`
-		Status  string  `json:"status"`
-		Accrual float64 `json:"accrual"`
+		Number  string          `json:"order"`
+		Status  string          `json:"status"`
+		Accrual decimal.Decimal `json:"accrual"`
 	}
 
 	client := resty.New()

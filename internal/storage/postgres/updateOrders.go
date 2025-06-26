@@ -2,12 +2,13 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
+	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 )
 
 func (s *Postgres) ListWaitingOrders(ctx context.Context) ([]models.Order, error) {
@@ -28,7 +29,7 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 	}
 
 	defer func() {
-		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, sql.ErrTxDone) {
+		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
 			logger, _ := zap.NewZapLogger("debug")
 			logger.Debug("failed to rollback transaction", logger.Error(err))
 		}
@@ -57,8 +58,8 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 		}
 
 		// add balance to user
-		addBalance := order.Accrual - orderMementoBefore.GetAccrual()
-		if addBalance != 0 {
+		addBalance := order.Accrual.Sub(orderMementoBefore.GetAccrual())
+		if !addBalance.Equal(decimal.Zero) {
 			err = s.sqlc.UpdateBalance(ctx, sqlc.UpdateBalanceParams{
 				Balance: addBalance,
 				ID:      order.ID,

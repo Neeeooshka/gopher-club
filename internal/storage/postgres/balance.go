@@ -8,6 +8,8 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
+	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 )
 
 func (s *Postgres) GetWithdrawals(ctx context.Context, user models.User) ([]models.Withdraw, error) {
@@ -39,7 +41,7 @@ func (s *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error
 	}
 
 	defer func() {
-		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, sql.ErrTxDone) {
+		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
 			logger, _ := zap.NewZapLogger("debug")
 			logger.Debug("failed to rollback transaction", logger.Error(err))
 		}
@@ -57,7 +59,7 @@ func (s *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error
 		return fmt.Errorf("could not withdraw balance: %w", err)
 	}
 
-	err = qtx.UpdateBalance(ctx, sqlc.UpdateBalanceParams{Balance: w.Sum * -1, ID: w.UserID})
+	err = qtx.UpdateBalance(ctx, sqlc.UpdateBalanceParams{Balance: w.Sum.Neg(), ID: w.UserID})
 	if err != nil {
 		return fmt.Errorf("could not update user balance: %w", err)
 	}
@@ -65,7 +67,7 @@ func (s *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error
 	return tx.Commit(ctx)
 }
 
-func (s *Postgres) GetWithdrawn(ctx context.Context, user models.User) (float64, error) {
+func (s *Postgres) GetWithdrawn(ctx context.Context, user models.User) (decimal.Decimal, error) {
 
 	w, err := s.sqlc.GetWithdrawn(ctx, user.ID)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {

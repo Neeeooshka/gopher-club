@@ -2,13 +2,13 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
+	"github.com/jackc/pgx/v5"
 )
 
 func (s *Postgres) GetUserByLogin(login string) (models.User, error) {
@@ -37,7 +37,7 @@ func (s *Postgres) AddUser(ctx context.Context, user models.User, salt string) e
 	}
 
 	defer func() {
-		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, sql.ErrTxDone) {
+		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
 			logger, _ := zap.NewZapLogger("debug")
 			logger.Debug("failed to rollback transaction", logger.Error(err))
 		}
