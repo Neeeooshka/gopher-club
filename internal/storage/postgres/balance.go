@@ -66,5 +66,11 @@ func (s *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error
 }
 
 func (s *Postgres) GetWithdrawn(ctx context.Context, user models.User) (float64, error) {
-	return s.sqlc.GetWithdrawn(ctx, user.ID)
+
+	w, err := s.sqlc.GetWithdrawn(ctx, user.ID)
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		err = nil
+	}
+
+	return w, err
 }

@@ -118,6 +118,8 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 
 func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
+	w.Header().Set("Content-Type", "application/json")
+
 	token := r.Header.Get("Authorization")
 	user, err := o.UserService.Authenticate(token)
 	if err != nil {
@@ -144,7 +146,6 @@ func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
