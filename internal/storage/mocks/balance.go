@@ -45,22 +45,22 @@ func (_m *BalanceRepository) GetWithdrawals(_a0 context.Context, _a1 models.User
 }
 
 // GetWithdrawn provides a mock function with given fields: _a0, _a1
-func (_m *BalanceRepository) GetWithdrawn(_a0 context.Context, _a1 models.User) (float64, error) {
+func (_m *BalanceRepository) GetWithdrawn(_a0 context.Context, _a1 models.User) (float32, error) {
 	ret := _m.Called(_a0, _a1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetWithdrawn")
 	}
 
-	var r0 float64
+	var r0 float32
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, models.User) (float64, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, models.User) (float32, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, models.User) float64); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, models.User) float32); ok {
 		r0 = rf(_a0, _a1)
 	} else {
-		r0 = ret.Get(0).(float64)
+		r0 = ret.Get(0).(float32)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, models.User) error); ok {
