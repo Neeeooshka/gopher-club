@@ -113,6 +113,8 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 
 	withdrawn, err := b.storage.GetWithdrawn(ctx, user)
 	if err != nil {
+		logger, _ := zap.NewZapLogger("debug")
+		logger.Debug("internal error", logger.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
