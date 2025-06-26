@@ -8,8 +8,6 @@ package sqlc
 import (
 	"context"
 	"time"
-
-	decimal "github.com/shopspring/decimal"
 )
 
 const addOrder = `-- name: AddOrder :one
@@ -34,7 +32,7 @@ type AddOrderRow struct {
 	UserID     int
 	Num        string
 	DateInsert time.Time
-	Accrual    decimal.Decimal
+	Accrual    float64
 	Status     string
 	IsNew      bool
 }

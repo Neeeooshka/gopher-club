@@ -10,7 +10,6 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	decimal "github.com/shopspring/decimal"
 )
 
 var (
@@ -29,7 +28,7 @@ type UpdateOrdersBatchResults struct {
 
 type UpdateOrdersParams struct {
 	Status  string
-	Accrual decimal.Decimal
+	Accrual float64
 	ID      int
 }
 

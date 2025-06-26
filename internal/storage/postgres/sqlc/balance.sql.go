@@ -7,8 +7,6 @@ package sqlc
 
 import (
 	"context"
-
-	decimal "github.com/shopspring/decimal"
 )
 
 const getWithdrawals = `-- name: GetWithdrawals :many
@@ -45,9 +43,9 @@ const getWithdrawn = `-- name: GetWithdrawn :one
 select sum(sum) as withdrawn from gopher_withdrawals where user_id = $1 group by user_id
 `
 
-func (q *Queries) GetWithdrawn(ctx context.Context, userID int) (decimal.Decimal, error) {
+func (q *Queries) GetWithdrawn(ctx context.Context, userID int) (float64, error) {
 	row := q.db.QueryRow(ctx, getWithdrawn, userID)
-	var withdrawn decimal.Decimal
+	var withdrawn float64
 	err := row.Scan(&withdrawn)
 	return withdrawn, err
 }
@@ -59,7 +57,7 @@ insert into gopher_withdrawals (user_id, num, sum) values ($1, $2, $3)
 type WithdrawBalanceParams struct {
 	UserID int
 	Num    string
-	Sum    decimal.Decimal
+	Sum    float64
 }
 
 func (q *Queries) WithdrawBalance(ctx context.Context, arg WithdrawBalanceParams) error {
