@@ -7,7 +7,6 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
-	"github.com/shopspring/decimal"
 	"net/http"
 	"resty.dev/v3"
 	"time"

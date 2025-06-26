@@ -9,7 +9,6 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 	"github.com/jackc/pgx/v5"
-	"github.com/shopspring/decimal"
 )
 
 func (s *Postgres) GetWithdrawals(ctx context.Context, user models.User) ([]models.Withdraw, error) {
