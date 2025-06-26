@@ -130,6 +130,7 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -161,5 +162,6 @@ func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
