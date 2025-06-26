@@ -2,51 +2,64 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
+	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 )
 
-func (l *Postgres) GetUserByLogin(login string) (models.User, error) {
+func (s *Postgres) GetUserByLogin(login string) (models.User, error) {
 
 	var user models.User
 
-	row := l.DB.QueryRow("select * from gopher_users where login = $1", login)
-	err := row.Scan(&user)
+	u, err := s.sqlc.GetUserByLogin(context.Background(), login)
 	if err != nil {
 		return user, err
 	}
 
-	row = l.DB.QueryRow("select p_value as credentials from gopher_user_params where p_name = 'credentials' and user_id = $1", user.ID)
+	user.ID = u.ID
+	user.Login = u.Login
+	user.Password = u.Password
+	user.Balance = u.Balance
+	user.Credentials = u.Credentials
 
-	return user, row.Scan(&user)
+	return user, nil
 }
 
-func (l *Postgres) AddUser(ctx context.Context, user models.User, salt string) error {
+func (s *Postgres) AddUser(ctx context.Context, user models.User, salt string) error {
 
-	var id int
-	var isNew bool
-
-	tx, err := l.DB.BeginTx(ctx, nil)
+	tx, err := s.DB.Begin(ctx)
 	if err != nil {
-		tx.Rollback()
-		return err
+		return fmt.Errorf("could not start transaction: %w", err)
 	}
 
-	row := tx.QueryRowContext(ctx, "WITH ins AS (\n    INSERT INTO gopher_users (login, password)\n    VALUES ($1, $2)\n    ON CONFLICT (login) DO NOTHING\n        RETURNING id\n)\nSELECT id, 1 as is_new FROM ins\nUNION  ALL\nSELECT id, 0 as is_new FROM gopher_users WHERE login = $1\nLIMIT 1", user.Login, user.Password)
-	err = row.Scan(&id, &isNew)
+	defer tx.Rollback(ctx)
+
+	qtx := s.sqlc.WithTx(tx)
+
+	u := sqlc.AddUserParams{
+		Login:    user.Login,
+		Password: user.Password,
+	}
+
+	result, err := qtx.AddUser(ctx, u)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not add user: %w", err)
 	}
 
-	if !isNew {
-		return storage.NewConflictUserError(id, user.Login)
+	if !result.IsNew {
+		return storage.NewConflictUserError(result.ID, u.Login)
 	}
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO gopher_user_params (user_id, p_name, p_value) VALUES ($1, 'credentials', $2)", id, salt)
+	c := sqlc.AddCredentialsParams{
+		UserID: result.ID,
+		PValue: salt,
+	}
+
+	err = qtx.AddCredentials(ctx, c)
 	if err != nil {
-		tx.Rollback()
-		return err
+		return fmt.Errorf("could not add credentials: %w", err)
 	}
 
-	return tx.Commit()
+	return tx.Commit(ctx)
 }

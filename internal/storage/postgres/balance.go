@@ -2,64 +2,61 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
+	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 )
 
-func (l *Postgres) GetWithdrawals(ctx context.Context, user models.User) ([]models.Withdraw, error) {
+func (s *Postgres) GetWithdrawals(ctx context.Context, user models.User) ([]models.Withdraw, error) {
 
-	var withdrawals []models.Withdraw
-
-	rows, err := l.DB.QueryContext(ctx, "select * from gopher_withdrawals where user_id = $1 order by date_withdraw desc", user.ID)
+	results, err := s.sqlc.GetWithdrawals(ctx, user.ID)
 	if err != nil {
-		return nil, err
-	}
-	if rows.Err() != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting withdrawals: %w", err)
 	}
 
-	defer rows.Close()
-
-	for rows.Next() {
-		var withdraw models.Withdraw
-		err := rows.Scan(&withdraw)
-		if err != nil {
-			return nil, err
+	withdrawals := make([]models.Withdraw, len(results))
+	for i, result := range results {
+		withdrawals[i] = models.Withdraw{
+			ID:           result.ID,
+			UserID:       result.UserID,
+			OrderNum:     result.Num,
+			DateWithdraw: result.DateWithdraw,
+			Sum:          result.Sum,
 		}
 	}
 
 	return withdrawals, nil
 }
 
-func (l *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error {
+func (s *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error {
 
-	tx, err := l.DB.BeginTx(ctx, nil)
+	tx, err := s.DB.Begin(ctx)
 	if err != nil {
-		tx.Rollback()
-		return err
+		return fmt.Errorf("could not start transaction: %w", err)
 	}
 
-	_, err = tx.ExecContext(ctx, "insert into gopher_withdrawals (user_id, num, sum) values ($1, $2, $3)", w.UserID, w.OrderNum, w.Sum)
+	defer tx.Rollback(ctx)
+
+	qtx := s.sqlc.WithTx(tx)
+
+	err = qtx.WithdrawBalance(ctx, sqlc.WithdrawBalanceParams{
+		UserID: w.UserID,
+		Num:    w.OrderNum,
+		Sum:    w.Sum,
+	})
+
 	if err != nil {
-		return err
+		return fmt.Errorf("could not withdraw balance: %w", err)
 	}
 
-	_, err = tx.ExecContext(ctx, "update gopher_users set balance = balance - $1 where user_id = $2", w.Sum, w.UserID)
+	err = qtx.UpdateBalance(ctx, sqlc.UpdateBalanceParams{Balance: w.Sum * -1, ID: w.UserID})
 	if err != nil {
-		tx.Rollback()
-		return err
+		return fmt.Errorf("could not update user balance: %w", err)
 	}
 
-	return tx.Commit()
+	return tx.Commit(ctx)
 }
 
-func (l *Postgres) GetWithdrawn(ctx context.Context, user models.User) (float64, error) {
-
-	var withdrawn float64
-
-	row := l.DB.QueryRowContext(ctx, "select sum(sum) as withdrawn from gopher_withdrawals where user_id = $1 group by user_id", user.ID)
-	if err := row.Scan(&withdrawn); err != nil {
-		return 0, err
-	}
-
-	return withdrawn, nil
+func (s *Postgres) GetWithdrawn(ctx context.Context, user models.User) (float64, error) {
+	return s.sqlc.GetWithdrawn(ctx, user.ID)
 }

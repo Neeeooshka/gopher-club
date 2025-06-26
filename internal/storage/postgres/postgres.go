@@ -2,117 +2,86 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
+	"embed"
 	"fmt"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"net/http"
+	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/tern/v2/migrate"
+	"io/fs"
 	"time"
 )
 
+const versionTable = "gophermart_schema_versions"
+
+//go:embed migrations/*.sql
+var migrationFiles embed.FS
+
 type Postgres struct {
-	DB *sql.DB
+	DB   *pgxpool.Pool
+	sqlc *sqlc.Queries
 }
 
-func (l *Postgres) Close() error {
-	return l.DB.Close()
+func (s *Postgres) Close() error {
+	s.DB.Close()
+	return nil
 }
 
 func NewPostgresStorage(conn string) (pgx *Postgres, err error) {
 
 	pgx = &Postgres{}
 
-	pgx.DB, err = sql.Open("pgx", conn)
+	cfg, err := pgxpool.ParseConfig(conn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing connection string: %w", err)
 	}
+
+	pgx.DB, err = pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to database: %w", err)
+	}
+
+	pgx.sqlc = sqlc.New(pgx.DB)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err = pgx.Bootstrap(ctx)
+	err = pgx.runMigrations(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error applying migrations: %w", err)
 	}
 
 	return pgx, nil
 }
 
-func (l *Postgres) PingHandler(w http.ResponseWriter, _ *http.Request) {
-	err := l.DB.Ping()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
+func (s *Postgres) Ping() error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return s.DB.Ping(ctx)
 }
 
-// Bootstrap execute first initialization DB, creating tables and indexes
-func (l *Postgres) Bootstrap(ctx context.Context) error {
+func (s *Postgres) runMigrations(ctx context.Context) error {
 
-	tx, err := l.DB.BeginTx(ctx, nil)
+	conn, err := s.DB.Acquire(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("error DB connection: %w", err)
+	}
+	defer conn.Release()
+
+	migrator, err := migrate.NewMigrator(ctx, conn.Conn(), versionTable)
+	if err != nil {
+		return fmt.Errorf("cannot construct migrator: %w", err)
 	}
 
-	defer tx.Rollback()
-
-	_, err = tx.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS gopher_users (
-			id SERIAL PRIMARY KEY,
-			login TEXT NOT NULL UNIQUE,
-			password TEXT NOT NULL,
-			balance NUMERIC(10, 2) DEFAULT 0 CHECK (balance >= 0)
-		);
-		CREATE UNIQUE INDEX IF NOT EXISTS users_login_idx ON gopher_users (login);
-	`)
+	migrationRoot, err := fs.Sub(migrationFiles, "migrations")
 	if err != nil {
-		return fmt.Errorf("failed to create gopher_users table: %w", err)
+		return fmt.Errorf("error loading migration root: %w", err)
 	}
 
-	_, err = tx.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS gopher_user_params (
-			id SERIAL PRIMARY KEY,
-			user_id INTEGER NOT NULL REFERENCES gopher_users(id),
-			p_name TEXT,
-			p_value TEXT
-		);
-		CREATE UNIQUE INDEX IF NOT EXISTS users_param_idx ON gopher_user_params (user_id, p_name);
-	`)
-	if err != nil {
-		return fmt.Errorf("failed to create gopher_user_params table: %w", err)
+	if err := migrator.LoadMigrations(migrationRoot); err != nil {
+		return fmt.Errorf("error loading migrations: %w", err)
 	}
 
-	_, err = tx.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS gopher_orders (
-			id SERIAL PRIMARY KEY,
-			user_id INTEGER NOT NULL REFERENCES gopher_users(id),
-			num TEXT NOT NULL UNIQUE,
-			date_insert TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			accrual NUMERIC(10, 2) DEFAULT 0,
-			status TEXT DEFAULT 'NEW'
-		);
-		CREATE INDEX IF NOT EXISTS orders_user_id_idx ON gopher_orders (user_id);
-		CREATE UNIQUE INDEX IF NOT EXISTS orders_number_idx ON gopher_orders (num);
-	`)
-	if err != nil {
-		return fmt.Errorf("failed to create gopher_orders table: %w", err)
-	}
-
-	_, err = tx.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS gopher_withdrawals (
-			id SERIAL PRIMARY KEY,
-			user_id INTEGER NOT NULL REFERENCES gopher_users(id),
-			num TEXT NOT NULL,
-			date_withdraw TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			sum NUMERIC(10, 2) NOT NULL CHECK (sum > 0)
-		);
-		CREATE UNIQUE INDEX IF NOT EXISTS withdrawals_user_order_idx ON gopher_withdrawals (user_id, num);
-		CREATE INDEX IF NOT EXISTS withdrawals_user_id_idx ON gopher_withdrawals (user_id);
-		CREATE INDEX IF NOT EXISTS withdrawals_num_idx ON gopher_withdrawals (num);
-	`)
-	if err != nil {
-		return fmt.Errorf("failed to create gopher_withdrawals table: %w", err)
-	}
-
-	return tx.Commit()
+	return migrator.Migrate(ctx)
 }

@@ -4,65 +4,62 @@ import (
 	"context"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
+	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 )
 
-func (l *Postgres) ListWaitingOrders(ctx context.Context) ([]models.Order, error) {
+func (s *Postgres) ListWaitingOrders(ctx context.Context) ([]models.Order, error) {
 
-	rows, err := l.DB.QueryContext(ctx, "select * from gopher_orders where status not in ('INVALID', 'PROCESSED')")
+	results, err := s.sqlc.ListWaitingOrders(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error listing waiting orders: %w", err)
 	}
 
-	defer rows.Close()
-
-	return l.extractOrders(rows)
+	return s.extractOrders(results), nil
 }
 
-func (l *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) error {
+func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) error {
 
-	tx, err := l.DB.BeginTx(ctx, nil)
+	tx, err := s.DB.Begin(ctx)
 	if err != nil {
-		tx.Rollback()
-		return err
+		return fmt.Errorf("could not start transaction: %w", err)
 	}
 
-	defer tx.Rollback()
+	defer tx.Rollback(ctx)
 
-	stmt, err := tx.PrepareContext(ctx, "update gopher_orders set status = $1, accrual = $2 where order_id = $3")
-	if err != nil {
-		return err
+	rows := make([]sqlc.UpdateOrdersParams, len(orders))
+	for i, order := range orders {
+		rows[i] = sqlc.UpdateOrdersParams{
+			Status:  order.Status,
+			Accrual: order.Accrual,
+			ID:      order.ID,
+		}
 	}
-	defer stmt.Close()
+
+	qtx := s.sqlc.WithTx(tx)
+	result := qtx.UpdateOrders(ctx, rows)
+	if err = result.Close(); err != nil {
+		return fmt.Errorf("could not update orders: %w", err)
+	}
 
 	for _, order := range orders {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			// update order
-			_, err := stmt.ExecContext(ctx, order.Status, order.Accrual, order.ID)
+		// get accrual before update
+		orderMementoBefore := order.GetMemento("beforeUpdate")
+		if orderMementoBefore != nil {
+			return fmt.Errorf("cannot get accrual before update")
+		}
+
+		// add balance to user
+		addBalance := order.Accrual - orderMementoBefore.GetAccrual()
+		if addBalance != 0 {
+			err = s.sqlc.UpdateBalance(ctx, sqlc.UpdateBalanceParams{
+				Balance: addBalance,
+				ID:      order.ID,
+			})
 			if err != nil {
-				return err
-			}
-
-			// get accrual before update
-			orderMementoBefore := order.GetMemento("beforeUpdate")
-			if orderMementoBefore != nil {
-				tx.Rollback()
-				return fmt.Errorf("cannot get accrual before update")
-			}
-
-			// add balance to user
-			addBalance := order.Accrual - orderMementoBefore.GetAccrual()
-			if addBalance > 0 {
-				_, err = tx.ExecContext(ctx, "update gopher_users set balance = balance + $1 where user_id = $2", addBalance, order.ID)
-				if err != nil {
-					tx.Rollback()
-					return err
-				}
+				return fmt.Errorf("could not update balance with userID %d: %w", order.UserID, err)
 			}
 		}
 	}
 
-	return tx.Commit()
+	return tx.Commit(ctx)
 }

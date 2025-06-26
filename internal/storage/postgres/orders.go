@@ -2,67 +2,62 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
+	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
+	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 )
 
-func (l *Postgres) AddOrder(number string, userID int) (models.Order, error) {
+func (s *Postgres) AddOrder(number string, userID int) (models.Order, error) {
 
 	var order models.Order
-	var isNew bool
 
-	row := l.DB.QueryRow("WITH ins AS (\n    INSERT INTO gopher_orders (user_id, num)\n    VALUES ($1, $2)\n    ON CONFLICT (num) DO NOTHING\n    RETURNING *, 1 AS is_new\n)\nSELECT * FROM ins\nUNION  ALL\nSELECT *, 0 AS is_new FROM gopher_orders WHERE num = $2\nLIMIT 1", userID, number)
-	err := row.Scan(
-		&order.ID,
-		&order.UserID,
-		&order.Number,
-		&order.DateInsert,
-		&order.Accrual,
-		&order.Status,
-		&isNew,
-	)
+	result, err := s.sqlc.AddOrder(context.Background(), sqlc.AddOrderParams{UserID: userID, Num: number})
 	if err != nil {
-		return order, err
+		return order, fmt.Errorf("error adding order: %w", err)
 	}
 
-	if !isNew {
-		if order.UserID == userID {
+	if !result.IsNew {
+		if result.UserID == userID {
 			return order, storage.NewConflictOrderError(number)
 		}
-		return order, storage.NewConflictOrderUserError(order.UserID, number)
+		return order, storage.NewConflictOrderUserError(result.UserID, number)
 	}
+
+	order.ID = result.ID
+	order.UserID = result.UserID
+	order.Number = result.Num
+	order.Status = result.Status
+	order.Accrual = result.Accrual
+	order.DateInsert = result.DateInsert
 
 	return order, nil
 }
 
-func (l *Postgres) ListUserOrders(ctx context.Context, user models.User) ([]models.Order, error) {
+func (s *Postgres) ListUserOrders(ctx context.Context, user models.User) ([]models.Order, error) {
 
-	rows, err := l.DB.QueryContext(ctx, "select * from gopher_orders where user_id = $1 order by date_insert desc", user.ID)
+	results, err := s.sqlc.ListUserOrders(ctx, user.ID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error listing user orders: %w", err)
 	}
 
-	defer rows.Close()
-
-	return l.extractOrders(rows)
+	return s.extractOrders(results), nil
 }
 
-func (l *Postgres) extractOrders(rows *sql.Rows) ([]models.Order, error) {
+func (s *Postgres) extractOrders(results []sqlc.GopherOrder) []models.Order {
 
-	var result []models.Order
+	orders := make([]models.Order, len(results))
 
-	for rows.Next() {
-		var o models.Order
-		if err := rows.Scan(&o); err != nil {
-			return nil, err
+	for i, result := range results {
+		orders[i] = models.Order{
+			ID:         result.ID,
+			UserID:     result.UserID,
+			Number:     result.Num,
+			Status:     result.Status,
+			Accrual:    result.Accrual,
+			DateInsert: result.DateInsert,
 		}
-		result = append(result, o)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return orders
 }

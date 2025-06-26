@@ -76,7 +76,7 @@ func (u *UserService) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := u.Authorize(cr)
 
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
