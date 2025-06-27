@@ -133,8 +133,6 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
@@ -166,6 +164,4 @@ func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *htt
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }

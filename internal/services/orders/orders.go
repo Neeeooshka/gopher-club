@@ -145,8 +145,6 @@ func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Requ
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func (o *OrdersService) CheckLuhn(orderNumber string) bool {

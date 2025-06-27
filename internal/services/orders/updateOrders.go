@@ -51,7 +51,7 @@ func NewOrdersUpdateService(our interface{}, opt config.Options) (OrdersUpdateSe
 	ous.logger = logger
 	ous.opt = opt
 	ous.storage = repo
-	ous.updateInterval = time.Second * 5
+	ous.updateInterval = time.Second
 	ous.waitingOrders = orders
 
 	go ous.ordersUpdater()
@@ -160,7 +160,7 @@ func (o *OrdersUpdateService) updateOrdersProcessor(dataCh chan models.Order) {
 
 func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]models.Order) {
 
-	var ordersForUpdate []models.Order
+	ordersForUpdate := make([]models.Order, 0, len(ordersForUpdateMap))
 	newWaitingOrders := make([]models.Order, 0, len(o.waitingOrders))
 
 	for _, order := range o.waitingOrders {
@@ -170,13 +170,13 @@ func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]models.
 				continue
 			}
 
-			order = ord
+			newWaitingOrders = append(newWaitingOrders, ord)
+		} else {
+			newWaitingOrders = append(newWaitingOrders, order)
 		}
-
-		newWaitingOrders = append(newWaitingOrders, order)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	if err := o.storage.UpdateOrders(ctx, ordersForUpdate); err != nil {
