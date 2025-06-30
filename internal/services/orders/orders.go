@@ -33,7 +33,7 @@ type OrdersService struct {
 	Inited        bool
 	UserService   *users.UserService
 	storage       OrdersRepository
-	updateService OrdersUpdateService
+	updateService *OrdersUpdateService
 }
 
 func NewOrdersService(or interface{}, us *users.UserService, opt config.Options) OrdersService {

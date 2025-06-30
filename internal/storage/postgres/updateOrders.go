@@ -51,8 +51,8 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 
 	for _, order := range orders {
 		// get accrual before update
-		orderMementoBefore := order.GetMemento("beforeUpdate")
-		if orderMementoBefore != nil {
+		orderMementoBefore, ok := order.GetMemento("beforeUpdate")
+		if !ok {
 			return fmt.Errorf("cannot get accrual before update")
 		}
 

@@ -26,14 +26,14 @@ type OrdersUpdateService struct {
 	isRunning      bool
 }
 
-func NewOrdersUpdateService(our interface{}, opt config.Options) (OrdersUpdateService, error) {
+func NewOrdersUpdateService(our interface{}, opt config.Options) (*OrdersUpdateService, error) {
 
 	var ous OrdersUpdateService
 
 	repo, ok := our.(OrdersUpdateRepository)
 
 	if !ok {
-		return ous, fmt.Errorf("2th argument expected OrdersUpdateRepository, got %T", our)
+		return nil, fmt.Errorf("2th argument expected OrdersUpdateRepository, got %T", our)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -41,12 +41,12 @@ func NewOrdersUpdateService(our interface{}, opt config.Options) (OrdersUpdateSe
 
 	orders, err := repo.ListWaitingOrders(ctx)
 	if err != nil {
-		return ous, fmt.Errorf("unable to request order details: %w", err)
+		return nil, fmt.Errorf("unable to request order details: %w", err)
 	}
 
 	logger, err := zap.NewZapLogger("debug")
 	if err != nil {
-		return ous, fmt.Errorf("unable to initialize logger: %w", err)
+		return nil, fmt.Errorf("unable to initialize logger: %w", err)
 	}
 
 	ous.logger = logger
@@ -57,7 +57,7 @@ func NewOrdersUpdateService(our interface{}, opt config.Options) (OrdersUpdateSe
 
 	go ous.ordersUpdater()
 
-	return ous, nil
+	return &ous, nil
 }
 
 func (o *OrdersUpdateService) AddWaitingOrder(order models.Order) {

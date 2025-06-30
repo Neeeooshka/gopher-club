@@ -9,22 +9,19 @@ type Order struct {
 	DateInsert time.Time `db:"date_insert" json:"uploaded_at"`
 	Accrual    float32   `db:"accrual" json:"accrual,omitempty"`
 	Status     string    `db:"status" json:"status"`
-	mementos   map[string]*orderMemento
+	mementos   map[string]orderMemento
 }
 
 func (o *Order) CreateMemento(state string) {
 	if o.mementos == nil {
-		o.mementos = make(map[string]*orderMemento)
+		o.mementos = make(map[string]orderMemento)
 	}
-	o.mementos[state] = &orderMemento{accrual: o.Accrual, status: o.Status}
+	o.mementos[state] = orderMemento{accrual: o.Accrual, status: o.Status}
 }
 
-func (o *Order) GetMemento(state string) *orderMemento {
+func (o *Order) GetMemento(state string) (orderMemento, bool) {
 	memento, ok := o.mementos[state]
-	if !ok {
-		return nil
-	}
-	return memento
+	return memento, ok
 }
 
 type orderMemento struct {
