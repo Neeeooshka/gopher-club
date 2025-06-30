@@ -5,11 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/config"
-	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
-	"github.com/Neeeooshka/gopher-club/internal/services/users"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
+	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
 	"io"
 	"net/http"
 	"strconv"
@@ -31,12 +30,11 @@ type OrdersRepository interface {
 type OrdersService struct {
 	Errors        []error
 	Inited        bool
-	UserService   *users.UserService
 	storage       OrdersRepository
 	updateService *OrdersUpdateService
 }
 
-func NewOrdersService(or interface{}, us *users.UserService, opt config.Options) OrdersService {
+func NewOrdersService(or interface{}, opt config.Options) OrdersService {
 
 	var os OrdersService
 
@@ -44,10 +42,6 @@ func NewOrdersService(or interface{}, us *users.UserService, opt config.Options)
 
 	if !ok {
 		os.Errors = append(os.Errors, fmt.Errorf("2th argument expected OrdersRepository, got %T", or))
-	}
-
-	if !us.Inited {
-		os.Errors = append(os.Errors, errors.New("UserService is unavailable"))
 	}
 
 	ous, err := NewOrdersUpdateService(or, opt)
@@ -61,7 +55,6 @@ func NewOrdersService(or interface{}, us *users.UserService, opt config.Options)
 	}
 
 	os.storage = ordersRepo
-	os.UserService = us
 	os.updateService = ous
 	os.Inited = true
 
@@ -70,12 +63,13 @@ func NewOrdersService(or interface{}, us *users.UserService, opt config.Options)
 
 func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Request) {
 
-	token := r.Header.Get("Authorization")
-	user, err := o.UserService.Authenticate(token)
-	if err != nil {
+	user := r.Context().Value("user")
+	if user == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	u := user.(models.User)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -84,18 +78,17 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 	}
 	defer func() {
 		if err := r.Body.Close(); err != nil {
-			logger, _ := zap.NewZapLogger("debug")
-			logger.Debug("failed to close request body reader", logger.Error(err))
+			zap.Log.Debug("failed to close request body reader", zap.Log.Error(err))
 		}
 	}()
 
 	orderNumber := string(body)
-	if !o.CheckLuhn(orderNumber) {
+	if !CheckLuhn(orderNumber) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	order, err := o.storage.AddOrder(orderNumber, user.ID)
+	order, err := o.storage.AddOrder(orderNumber, u.ID)
 	var cue *storage.ConflictOrderError
 	var coue *storage.ConflictOrderUserError
 	if err != nil {
@@ -118,17 +111,18 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 
 func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
-	token := r.Header.Get("Authorization")
-	user, err := o.UserService.Authenticate(token)
-	if err != nil {
+	user := r.Context().Value("user")
+	if user == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
+	u := user.(models.User)
+
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
 
-	orders, err := o.storage.ListUserOrders(ctx, user)
+	orders, err := o.storage.ListUserOrders(ctx, u)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -142,7 +136,7 @@ func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Requ
 	httputil.WriteJSON(w, orders)
 }
 
-func (o *OrdersService) CheckLuhn(orderNumber string) bool {
+func CheckLuhn(orderNumber string) bool {
 
 	var sum int
 

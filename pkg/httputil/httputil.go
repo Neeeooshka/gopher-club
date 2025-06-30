@@ -2,7 +2,7 @@ package httputil
 
 import (
 	"encoding/json"
-	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
+	"log"
 	"net/http"
 )
 
@@ -20,7 +20,6 @@ func WriteJSON(w http.ResponseWriter, v interface{}) {
 
 	_, err = w.Write(jsonData)
 	if err != nil {
-		logger, _ := zap.NewZapLogger("debug")
-		logger.Debug("failed to write body", logger.Error(err))
+		log.Printf("failed to write body: %v", err)
 	}
 }

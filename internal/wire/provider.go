@@ -2,13 +2,13 @@ package wire
 
 import (
 	"github.com/Neeeooshka/gopher-club/internal/app"
-	"github.com/Neeeooshka/gopher-club/internal/compressor"
-	"github.com/Neeeooshka/gopher-club/internal/compressor/gzip"
 	"github.com/Neeeooshka/gopher-club/internal/config"
-	"github.com/Neeeooshka/gopher-club/internal/logger"
-	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres"
+	"github.com/Neeeooshka/gopher-club/pkg/compressor"
+	"github.com/Neeeooshka/gopher-club/pkg/compressor/gzip"
+	"github.com/Neeeooshka/gopher-club/pkg/logger"
+	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
 )
 
 func ProvideConfig() config.Options {

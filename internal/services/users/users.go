@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
+	"net/http"
 )
 
 type UserRepository interface {
@@ -35,6 +36,24 @@ func NewUserService(ur interface{}) UserService {
 	us.Inited = true
 
 	return us
+}
+
+func (u *UserService) AuthMiddleware(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+
+		ctx := r.Context()
+
+		token := r.Header.Get("Authorization")
+
+		user, err := u.Authenticate(token)
+		if err == nil {
+			ctx = context.WithValue(ctx, "user", user)
+		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+
+	return http.HandlerFunc(fn)
 }
 
 func (u *UserService) Authenticate(jwtToken string) (models.User, error) {

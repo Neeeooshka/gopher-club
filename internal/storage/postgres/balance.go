@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
+	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -41,8 +41,7 @@ func (s *Postgres) WithdrawBalance(ctx context.Context, w models.Withdraw) error
 
 	defer func() {
 		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			logger, _ := zap.NewZapLogger("debug")
-			logger.Debug("failed to rollback transaction", logger.Error(err))
+			zap.Log.Debug("failed to rollback transaction", zap.Log.Error(err))
 		}
 	}()
 

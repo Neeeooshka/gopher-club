@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/config"
-	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
+	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
 	"net/http"
 	"resty.dev/v3"
 	"time"
@@ -18,7 +18,6 @@ type OrdersUpdateRepository interface {
 }
 
 type OrdersUpdateService struct {
-	logger         *zap.ZapLogger
 	opt            config.Options
 	storage        OrdersUpdateRepository
 	updateInterval time.Duration
@@ -44,12 +43,6 @@ func NewOrdersUpdateService(our interface{}, opt config.Options) (*OrdersUpdateS
 		return nil, fmt.Errorf("unable to request order details: %w", err)
 	}
 
-	logger, err := zap.NewZapLogger("debug")
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize logger: %w", err)
-	}
-
-	ous.logger = logger
 	ous.opt = opt
 	ous.storage = repo
 	ous.updateInterval = time.Second
@@ -100,8 +93,7 @@ func (o *OrdersUpdateService) updateOrders() {
 	client := resty.New()
 	defer func() {
 		if err := client.Close(); err != nil {
-			logger, _ := zap.NewZapLogger("debug")
-			logger.Debug("failed to close resty client", logger.Error(err))
+			zap.Log.Debug("failed to close resty client", zap.Log.Error(err))
 		}
 	}()
 
@@ -110,12 +102,12 @@ func (o *OrdersUpdateService) updateOrders() {
 	for _, order := range o.waitingOrders {
 		res, err := r.Get(fmt.Sprintf(o.opt.GetAccrualSystem()+"/api/orders/%s", order.Number))
 		if err != nil {
-			o.logger.Debug("cannot connect to the Loyalty calculation system", o.logger.Error(err))
+			zap.Log.Debug("cannot connect to the Loyalty calculation system", zap.Log.Error(err))
 			return
 		}
 
 		if res.StatusCode() == http.StatusNoContent {
-			o.logger.Debug(fmt.Sprintf("order is not find in the Loyalty calculation system: %s", order.Number))
+			zap.Log.Debug(fmt.Sprintf("order is not find in the Loyalty calculation system: %s", order.Number))
 			continue
 		}
 
@@ -124,14 +116,14 @@ func (o *OrdersUpdateService) updateOrders() {
 		}
 
 		if res.StatusCode() != http.StatusOK {
-			o.logger.Debug(fmt.Sprintf("the Loyalty calculation system return an unexpected status code: %d", res.StatusCode()))
+			zap.Log.Debug(fmt.Sprintf("the Loyalty calculation system return an unexpected status code: %d", res.StatusCode()))
 			return
 		}
 
 		oi := orderInfo{}
 
 		if err := json.NewDecoder(res.Body).Decode(&oi); err != nil {
-			o.logger.Debug(fmt.Sprintf("cannot deserialize response from the Loyalty calculation system: %v", err), o.logger.Error(err))
+			zap.Log.Debug(fmt.Sprintf("cannot deserialize response from the Loyalty calculation system: %v", err), zap.Log.Error(err))
 			return
 		}
 
@@ -187,7 +179,7 @@ func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]models.
 	defer cancel()
 
 	if err := o.storage.UpdateOrders(ctx, ordersForUpdate); err != nil {
-		o.logger.Debug("cannot update orders from the Loyalty calculation system", o.logger.Error(err))
+		zap.Log.Debug("cannot update orders from the Loyalty calculation system", zap.Log.Error(err))
 		return
 	}
 

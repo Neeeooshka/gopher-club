@@ -3,7 +3,6 @@ package orders
 import (
 	"context"
 	"github.com/Neeeooshka/gopher-club/internal/config"
-	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"github.com/stretchr/testify/assert"
@@ -102,13 +101,9 @@ func TestUpdateOrders(t *testing.T) {
 	err := opt.AccrualAddress.Set("http://" + accrualSystemAddress + ":" + accrualSystemPort)
 	assert.NoError(t, err)
 
-	logger, err := zap.NewZapLogger("debug")
-	assert.NoError(t, err)
-
 	service := OrdersUpdateService{
 		storage:        mockRepo,
 		waitingOrders:  []models.Order{{Number: "4532015112830366", Status: "NEW"}},
-		logger:         logger,
 		opt:            opt,
 		updateInterval: time.Second,
 	}
@@ -125,14 +120,10 @@ func TestUpdateOrdersProcessor(t *testing.T) {
 	mockRepo := new(MockOrdersUpdateRepository)
 	mockRepo.On("UpdateOrders", mock.Anything, mock.Anything).Return(nil)
 
-	logger, err := zap.NewZapLogger("debug")
-	assert.NoError(t, err)
-
 	order := models.Order{Number: "4532015112830366", Status: "PROCESSED"}
 
 	service := OrdersUpdateService{
 		storage:       mockRepo,
-		logger:        logger,
 		waitingOrders: []models.Order{{Number: order.Number, Status: "NEW"}},
 	}
 
@@ -152,15 +143,11 @@ func TestApplyUpdates(t *testing.T) {
 	mockRepo := new(MockOrdersUpdateRepository)
 	mockRepo.On("UpdateOrders", mock.Anything, mock.Anything).Return(nil)
 
-	logger, err := zap.NewZapLogger("debug")
-	assert.NoError(t, err)
-
 	order := models.Order{Number: "4532015112830366", Status: "NEW"}
 
 	service := OrdersUpdateService{
 		storage:       mockRepo,
 		waitingOrders: []models.Order{order},
-		logger:        logger,
 	}
 
 	updates := map[string]models.Order{

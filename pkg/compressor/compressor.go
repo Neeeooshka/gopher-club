@@ -1,8 +1,8 @@
 package compressor
 
 import (
-	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -63,6 +63,7 @@ func newCompressorReader(r io.ReadCloser, c Compressor) (*compressorReader, erro
 		cr: cr,
 	}, nil
 }
+
 func (c *compressorReader) Read(p []byte) (n int, err error) {
 	return c.cr.Read(p)
 }
@@ -74,14 +75,22 @@ func (c *compressorReader) Close() error {
 	return c.cr.Close()
 }
 
-func IncludeCompressor(h http.HandlerFunc, c Compressor) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+type compressor struct {
+	c Compressor
+}
+
+func NewCompressor(c Compressor) *compressor {
+	return &compressor{c: c}
+}
+
+func (c *compressor) Middleware(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
 
 		ow := w
 
 		contentEncoding := r.Header.Get("Content-Encoding")
-		if strings.Contains(contentEncoding, c.GetEncoding()) {
-			cr, err := newCompressorReader(r.Body, c)
+		if strings.Contains(contentEncoding, c.c.GetEncoding()) {
+			cr, err := newCompressorReader(r.Body, c.c)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return
@@ -89,26 +98,26 @@ func IncludeCompressor(h http.HandlerFunc, c Compressor) http.HandlerFunc {
 			r.Body = cr
 			defer func() {
 				if err := cr.Close(); err != nil {
-					logger, _ := zap.NewZapLogger("debug")
-					logger.Debug("failed to close compressor reader", logger.Error(err))
+					log.Printf("failed to close compressor reader: %v", err)
 				}
 			}()
 		}
 
 		acceptEncoding := r.Header.Get("Accept-Encoding")
-		if strings.Contains(acceptEncoding, c.GetEncoding()) {
-			w.Header().Set("Content-Type", "application/x-"+c.GetEncoding())
-			w.Header().Set("Content-Encoding", c.GetEncoding())
-			cw := newCompressorWriter(w, c)
+		if strings.Contains(acceptEncoding, c.c.GetEncoding()) {
+			w.Header().Set("Content-Type", "application/x-"+c.c.GetEncoding())
+			w.Header().Set("Content-Encoding", c.c.GetEncoding())
+			cw := newCompressorWriter(w, c.c)
 			ow = cw
 			defer func() {
 				if err := cw.Close(); err != nil {
-					logger, _ := zap.NewZapLogger("debug")
-					logger.Debug("failed to close compressor writer", logger.Error(err))
+					log.Printf("failed to close compressor writer: %v", err)
 				}
 			}()
 		}
 
-		h.ServeHTTP(ow, r)
+		next.ServeHTTP(ow, r)
 	}
+
+	return http.HandlerFunc(fn)
 }
