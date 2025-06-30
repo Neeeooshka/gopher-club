@@ -84,6 +84,8 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	withdraw.UserID = user.ID
+
 	go func() {
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
