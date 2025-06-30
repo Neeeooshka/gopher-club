@@ -13,6 +13,9 @@ type Order struct {
 }
 
 func (o *Order) CreateMemento(state string) {
+	if o.mementos == nil {
+		o.mementos = make(map[string]*orderMemento)
+	}
 	o.mementos[state] = &orderMemento{accrual: o.Accrual, status: o.Status}
 }
 

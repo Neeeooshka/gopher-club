@@ -23,6 +23,7 @@ type OrdersUpdateService struct {
 	storage        OrdersUpdateRepository
 	updateInterval time.Duration
 	waitingOrders  []models.Order
+	isRunning      bool
 }
 
 func NewOrdersUpdateService(our interface{}, opt config.Options) (OrdersUpdateService, error) {
@@ -51,7 +52,7 @@ func NewOrdersUpdateService(our interface{}, opt config.Options) (OrdersUpdateSe
 	ous.logger = logger
 	ous.opt = opt
 	ous.storage = repo
-	ous.updateInterval = time.Second * 5
+	ous.updateInterval = time.Second
 	ous.waitingOrders = orders
 
 	go ous.ordersUpdater()
@@ -78,9 +79,12 @@ func (o *OrdersUpdateService) ordersUpdater() {
 func (o *OrdersUpdateService) updateOrders() {
 
 	// do nothing
-	if len(o.waitingOrders) == 0 {
+	if len(o.waitingOrders) == 0 || o.isRunning {
 		return
 	}
+
+	// lock process
+	o.start()
 
 	dataCh := make(chan models.Order)
 	defer close(dataCh)
@@ -156,6 +160,9 @@ func (o *OrdersUpdateService) updateOrdersProcessor(dataCh chan models.Order) {
 	if len(ordersForUpdateMap) > 0 {
 		o.applyUpdates(ordersForUpdateMap)
 	}
+
+	// unlock process
+	o.stop()
 }
 
 func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]models.Order) {
@@ -185,4 +192,12 @@ func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]models.
 	}
 
 	o.waitingOrders = newWaitingOrders
+}
+
+func (o *OrdersUpdateService) start() {
+	o.isRunning = true
+}
+
+func (o *OrdersUpdateService) stop() {
+	o.isRunning = false
 }

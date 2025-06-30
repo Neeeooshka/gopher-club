@@ -100,7 +100,6 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 	var coue *storage.ConflictOrderUserError
 	if err != nil {
 		if errors.As(err, &cue) {
-			w.WriteHeader(http.StatusOK)
 			return
 		}
 		if errors.As(err, &coue) {
@@ -143,10 +142,7 @@ func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Requ
 
 	if err := json.NewEncoder(w).Encode(orders); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func (o *OrdersService) CheckLuhn(orderNumber string) bool {

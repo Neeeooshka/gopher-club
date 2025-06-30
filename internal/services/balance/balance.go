@@ -95,8 +95,6 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 			logger.Debug(fmt.Sprintf("cannot withdraw balance for user %d", user.ID), logger.Error(err))
 		}
 	}()
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Request) {
@@ -131,10 +129,7 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 
 	if err := json.NewEncoder(w).Encode(balance); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
@@ -164,8 +159,5 @@ func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *htt
 
 	if err := json.NewEncoder(w).Encode(withdrawals); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
