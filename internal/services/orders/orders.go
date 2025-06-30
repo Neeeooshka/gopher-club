@@ -100,6 +100,7 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 	var coue *storage.ConflictOrderUserError
 	if err != nil {
 		if errors.As(err, &cue) {
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 		if errors.As(err, &coue) {

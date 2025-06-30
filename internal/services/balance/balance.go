@@ -95,6 +95,8 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 			logger.Debug(fmt.Sprintf("cannot withdraw balance for user %d", user.ID), logger.Error(err))
 		}
 	}()
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Request) {
