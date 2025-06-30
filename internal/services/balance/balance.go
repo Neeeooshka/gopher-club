@@ -9,6 +9,7 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
+	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"net/http"
 	"time"
 )
@@ -101,8 +102,6 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 
 func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type", "application/json")
-
 	token := r.Header.Get("Authorization")
 	user, err := b.UserService.Authenticate(token)
 	if err != nil {
@@ -129,14 +128,10 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 		Withdraw: withdrawn,
 	}
 
-	if err := json.NewEncoder(w).Encode(balance); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+	httputil.WriteJSON(w, balance)
 }
 
 func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Set("Content-Type", "application/json")
 
 	token := r.Header.Get("Authorization")
 	user, err := b.UserService.Authenticate(token)
@@ -159,7 +154,5 @@ func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(withdrawals); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+	httputil.WriteJSON(w, withdrawals)
 }

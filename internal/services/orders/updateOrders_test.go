@@ -2,10 +2,10 @@ package orders
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/logger/zap"
 	"github.com/Neeeooshka/gopher-club/internal/models"
+	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"log"
@@ -51,11 +51,7 @@ func (a *accrualSystem) accrualOrdersHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err := json.NewEncoder(w).Encode(o)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	httputil.WriteJSON(w, o)
 }
 
 func (a *accrualSystem) start(stopCh chan struct{}) {

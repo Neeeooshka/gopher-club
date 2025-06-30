@@ -2,7 +2,6 @@ package orders
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/config"
@@ -10,6 +9,7 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/users"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
+	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"io"
 	"net/http"
 	"strconv"
@@ -118,8 +118,6 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 
 func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type", "application/json")
-
 	token := r.Header.Get("Authorization")
 	user, err := o.UserService.Authenticate(token)
 	if err != nil {
@@ -141,9 +139,7 @@ func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(orders); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+	httputil.WriteJSON(w, orders)
 }
 
 func (o *OrdersService) CheckLuhn(orderNumber string) bool {
