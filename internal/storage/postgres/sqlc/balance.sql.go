@@ -40,22 +40,14 @@ func (q *Queries) GetWithdrawals(ctx context.Context, userID int) ([]GopherWithd
 }
 
 const getWithdrawn = `-- name: GetWithdrawn :one
-with w as (select user_id, sum(sum) as withdrawn from gopher_withdrawals where user_id = $1 group by user_id)
-select u.balance, w.withdrawn from gopher_users u
-left join w on w.user_id = u.id
-limit 1
+select sum(sum) as withdrawn from gopher_withdrawals where user_id = $1 group by user_id
 `
 
-type GetWithdrawnRow struct {
-	Balance   float32
-	Withdrawn float32
-}
-
-func (q *Queries) GetWithdrawn(ctx context.Context, userID int) (GetWithdrawnRow, error) {
+func (q *Queries) GetWithdrawn(ctx context.Context, userID int) (float32, error) {
 	row := q.db.QueryRow(ctx, getWithdrawn, userID)
-	var i GetWithdrawnRow
-	err := row.Scan(&i.Balance, &i.Withdrawn)
-	return i, err
+	var withdrawn float32
+	err := row.Scan(&withdrawn)
+	return withdrawn, err
 }
 
 const withdrawBalance = `-- name: WithdrawBalance :exec

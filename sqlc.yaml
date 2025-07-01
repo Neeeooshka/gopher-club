@@ -26,8 +26,6 @@ overrides:
       - db_type: bigint
         engine: postgresql
         go_type: float32
-      - column: w.withdrawn
-        go_type: float32
 sql:
   - schema: "internal/storage/postgres/migrations/"
     engine: "postgresql"

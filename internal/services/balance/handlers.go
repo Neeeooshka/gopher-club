@@ -63,21 +63,21 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	withdrawn, balance, err := b.storage.GetWithdrawn(ctx, user)
+	withdrawn, err := b.storage.GetWithdrawn(ctx, user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	balanceStruct := struct {
+	balance := struct {
 		Balance  float32 `json:"current"`
 		Withdraw float32 `json:"withdrawn"`
 	}{
-		Balance:  balance,
+		Balance:  user.Balance,
 		Withdraw: withdrawn,
 	}
 
-	httputil.WriteJSON(w, balanceStruct)
+	httputil.WriteJSON(w, balance)
 }
 
 func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
