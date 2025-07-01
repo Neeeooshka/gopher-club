@@ -13,16 +13,16 @@ import (
 )
 
 type OrdersUpdateRepository interface {
-	UpdateOrders(context.Context, []models.Order) error
 	ListWaitingOrders(context.Context) ([]models.Order, error)
+	UpdateOrders(context.Context, []models.Order) error
 }
 
 type OrdersUpdateService struct {
+	isRunning      bool
 	opt            config.Options
 	storage        OrdersUpdateRepository
 	updateInterval time.Duration
 	waitingOrders  []models.Order
-	isRunning      bool
 }
 
 func NewOrdersUpdateService(our interface{}, opt config.Options) (*OrdersUpdateService, error) {

@@ -1,29 +1,64 @@
 package app
 
 import (
-	"github.com/Neeeooshka/gopher-club/pkg/compressor"
-	"github.com/Neeeooshka/gopher-club/pkg/logger"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"net/http"
 )
 
-func (a *GopherClubApp) InitializeRoutes(log logger.Logger, comp compressor.Compressor) {
+func (a *GopherClubApp) InitializeRoutes() {
 
-	l := logger.NewLogger(log)
-	c := compressor.NewCompressor(comp)
+	// middlewares for all handlers
+	a.Router.Use(a.getMiddlewares()...)
 
-	a.Router.Use(l.Middleware, a.UserService.AuthMiddleware)
-
+	// auth only handlers
 	a.Router.Group(func(r chi.Router) {
 
-		r.Use(c.Middleware)
+		r.Use(a.UserService.AuthMiddleware)
 
-		r.Post("/api/user/register", a.UserService.RegisterUserHandler)
-		r.Post("/api/user/login", a.UserService.LoginUserHandler)
-		r.Post("/api/user/orders", a.OrdersService.AddUserOrderHandler)
-		r.Post("/api/user/balance/withdraw", a.BalanceService.WithdrawBalanceHandler)
+		// OrdersService handlers
+		r.Group(func(r chi.Router) {
+
+			r.Use(a.HealthCheckMiddleware(&a.OrdersService))
+
+			r.Get("/api/user/orders", a.OrdersService.GetUserOrdersHandler)
+			r.Post("/api/user/orders", a.OrdersService.AddUserOrderHandler)
+		})
+
+		// BalanceService handlers
+		r.Group(func(r chi.Router) {
+
+			r.Use(a.HealthCheckMiddleware(&a.BalanceService))
+
+			r.Get("/api/user/balance", a.BalanceService.GetUserBalanceHandler)
+			r.Get("/api/user/withdrawals", a.BalanceService.GetUserWithdrawalsHandler)
+			r.Post("/api/user/balance/withdraw", a.BalanceService.WithdrawBalanceHandler)
+		})
 	})
 
-	a.Router.Get("/api/user/orders", a.OrdersService.GetUserOrdersHandler)
-	a.Router.Get("/api/user/balance", a.BalanceService.GetUserBalanceHandler)
-	a.Router.Get("/api/user/withdrawals", a.BalanceService.GetUserWithdrawalsHandler)
+	a.Router.Post("/api/user/register", a.UserService.RegisterUserHandler)
+	a.Router.Post("/api/user/login", a.UserService.LoginUserHandler)
+}
+
+func (a *GopherClubApp) getMiddlewares() []func(http.Handler) http.Handler {
+
+	var middlewares []func(http.Handler) http.Handler
+
+	// logger
+	if a.logger != nil {
+		middlewares = append(middlewares, a.logger.Middleware)
+	}
+
+	// HealthChecker UserService for all requests
+	middlewares = append(middlewares, a.HealthCheckMiddleware(&a.UserService))
+
+	// compressor reader
+	if a.compressor != nil {
+		middlewares = append(middlewares, a.compressor.Middleware)
+	}
+
+	// compressor writer
+	middlewares = append(middlewares, middleware.Compress(5, a.compressor.GetEncoding()))
+
+	return middlewares
 }

@@ -6,13 +6,7 @@ import (
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/models"
-	"github.com/Neeeooshka/gopher-club/internal/storage"
-	"github.com/Neeeooshka/gopher-club/pkg/httputil"
-	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
-	"io"
-	"net/http"
 	"strconv"
-	"time"
 )
 
 const (
@@ -23,13 +17,13 @@ const (
 )
 
 type OrdersRepository interface {
-	AddOrder(string, int) (models.Order, error)
+	AddOrder(context.Context, string, int) (models.Order, error)
 	ListUserOrders(context.Context, models.User) ([]models.Order, error)
 }
 
 type OrdersService struct {
-	Errors        []error
-	Inited        bool
+	errors        []error
+	init          bool
 	storage       OrdersRepository
 	updateService *OrdersUpdateService
 }
@@ -41,99 +35,24 @@ func NewOrdersService(or interface{}, opt config.Options) OrdersService {
 	ordersRepo, ok := or.(OrdersRepository)
 
 	if !ok {
-		os.Errors = append(os.Errors, fmt.Errorf("2th argument expected OrdersRepository, got %T", or))
+		os.errors = append(os.errors, fmt.Errorf("2th argument expected OrdersRepository, got %T", or))
 	}
 
 	ous, err := NewOrdersUpdateService(or, opt)
 
 	if err != nil {
-		os.Errors = append(os.Errors, errors.New("cannot initialize OrdersUpdateService"))
+		os.errors = append(os.errors, errors.New("cannot initialize OrdersUpdateService"))
 	}
 
-	if len(os.Errors) > 0 {
+	if len(os.errors) > 0 {
 		return os
 	}
 
 	os.storage = ordersRepo
 	os.updateService = ous
-	os.Inited = true
+	os.init = true
 
 	return os
-}
-
-func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Request) {
-
-	user := r.Context().Value("user")
-	if user == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	u := user.(models.User)
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			zap.Log.Debug("failed to close request body reader", zap.Log.Error(err))
-		}
-	}()
-
-	orderNumber := string(body)
-	if !CheckLuhn(orderNumber) {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-
-	order, err := o.storage.AddOrder(orderNumber, u.ID)
-	var cue *storage.ConflictOrderError
-	var coue *storage.ConflictOrderUserError
-	if err != nil {
-		if errors.As(err, &cue) {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		if errors.As(err, &coue) {
-			w.WriteHeader(http.StatusConflict)
-			return
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	o.updateService.AddWaitingOrder(order)
-
-	w.WriteHeader(http.StatusAccepted)
-}
-
-func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Request) {
-
-	user := r.Context().Value("user")
-	if user == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	u := user.(models.User)
-
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
-	defer cancel()
-
-	orders, err := o.storage.ListUserOrders(ctx, u)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if len(orders) == 0 {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	httputil.WriteJSON(w, orders)
 }
 
 func CheckLuhn(orderNumber string) bool {
@@ -157,4 +76,12 @@ func CheckLuhn(orderNumber string) bool {
 		sum += digit
 	}
 	return sum%10 == 0
+}
+
+func (o *OrdersService) HealthCheck() ([]error, bool) {
+	return o.errors, o.init
+}
+
+func (o *OrdersService) GetName() string {
+	return "OrdersService"
 }

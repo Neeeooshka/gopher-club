@@ -33,8 +33,8 @@ func ProvideApp(
 	log logger.Logger,
 	comp compressor.Compressor,
 ) *app.GopherClubApp {
-	appInstance := app.NewGopherClubAppInstance(cfg, store)
-	appInstance.InitializeRoutes(log, comp)
+	appInstance := app.NewGopherClubAppInstance(cfg, store).WithCompressor(comp).WithLogger(log)
+	appInstance.InitializeRoutes()
 
 	return appInstance
 }

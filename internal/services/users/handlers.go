@@ -55,7 +55,7 @@ func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Add("Authorization", token)
+	w.Header().Add("Authorization", "Bearer "+token)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -80,6 +80,6 @@ func (u *UserService) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Authorization", token)
+	w.Header().Add("Authorization", "Bearer "+token)
 	w.WriteHeader(http.StatusOK)
 }

@@ -103,7 +103,7 @@ func TestUpdateOrders(t *testing.T) {
 
 	service := OrdersUpdateService{
 		storage:        mockRepo,
-		waitingOrders:  []models.Order{{Number: "4532015112830366", Status: "NEW"}},
+		waitingOrders:  []models.Order{{Number: "4532015112830366", Status: StatusNew}},
 		opt:            opt,
 		updateInterval: time.Second,
 	}
@@ -120,11 +120,11 @@ func TestUpdateOrdersProcessor(t *testing.T) {
 	mockRepo := new(MockOrdersUpdateRepository)
 	mockRepo.On("UpdateOrders", mock.Anything, mock.Anything).Return(nil)
 
-	order := models.Order{Number: "4532015112830366", Status: "PROCESSED"}
+	order := models.Order{Number: "4532015112830366", Status: StatusProcessed}
 
 	service := OrdersUpdateService{
 		storage:       mockRepo,
-		waitingOrders: []models.Order{{Number: order.Number, Status: "NEW"}},
+		waitingOrders: []models.Order{{Number: order.Number, Status: StatusNew}},
 	}
 
 	dataCh := make(chan models.Order)
@@ -143,7 +143,7 @@ func TestApplyUpdates(t *testing.T) {
 	mockRepo := new(MockOrdersUpdateRepository)
 	mockRepo.On("UpdateOrders", mock.Anything, mock.Anything).Return(nil)
 
-	order := models.Order{Number: "4532015112830366", Status: "NEW"}
+	order := models.Order{Number: "4532015112830366", Status: StatusProcessing}
 
 	service := OrdersUpdateService{
 		storage:       mockRepo,
@@ -151,7 +151,7 @@ func TestApplyUpdates(t *testing.T) {
 	}
 
 	updates := map[string]models.Order{
-		order.Number: {Number: order.Number, Status: "PROCESSED"},
+		order.Number: {Number: order.Number, Status: StatusProcessed},
 	}
 
 	service.applyUpdates(updates)

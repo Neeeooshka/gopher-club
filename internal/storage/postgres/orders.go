@@ -8,11 +8,11 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 )
 
-func (s *Postgres) AddOrder(number string, userID int) (models.Order, error) {
+func (s *Postgres) AddOrder(ctx context.Context, number string, userID int) (models.Order, error) {
 
 	var order models.Order
 
-	result, err := s.sqlc.AddOrder(context.Background(), sqlc.AddOrderParams{UserID: userID, Num: number})
+	result, err := s.sqlc.AddOrder(ctx, sqlc.AddOrderParams{UserID: userID, Num: number})
 	if err != nil {
 		return order, fmt.Errorf("error adding order: %w", err)
 	}

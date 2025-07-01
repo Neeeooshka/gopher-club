@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"net/http"
+	"strings"
 )
 
 type UserRepository interface {
@@ -13,8 +14,8 @@ type UserRepository interface {
 }
 
 type UserService struct {
-	Errors  []error
-	Inited  bool
+	errors  []error
+	init    bool
 	storage UserRepository
 }
 
@@ -25,15 +26,15 @@ func NewUserService(ur interface{}) UserService {
 	userRepo, ok := ur.(UserRepository)
 
 	if !ok {
-		us.Errors = append(us.Errors, fmt.Errorf("2th argument expected UserRepository, got %T", ur))
+		us.errors = append(us.errors, fmt.Errorf("2th argument expected UserRepository, got %T", ur))
 	}
 
-	if len(us.Errors) > 0 {
+	if len(us.errors) > 0 {
 		return us
 	}
 
 	us.storage = userRepo
-	us.Inited = true
+	us.init = true
 
 	return us
 }
@@ -41,14 +42,15 @@ func NewUserService(ur interface{}) UserService {
 func (u *UserService) AuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 
-		ctx := r.Context()
-
-		token := r.Header.Get("Authorization")
+		token := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 
 		user, err := u.Authenticate(token)
-		if err == nil {
-			ctx = context.WithValue(ctx, "user", user)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
+
+		ctx := context.WithValue(r.Context(), models.UserContextKey, user)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
@@ -86,4 +88,12 @@ func (u *UserService) Authorize(cr credentials) (string, error) {
 	}
 
 	return CreateJWTToken(user.Login)
+}
+
+func (u *UserService) HealthCheck() ([]error, bool) {
+	return u.errors, u.init
+}
+
+func (u *UserService) GetName() string {
+	return "UserService"
 }

@@ -38,15 +38,19 @@ func (r *logging) WriteHeader(statusCode int) {
 	r.responseData.Status = statusCode
 }
 
-type logger struct {
+type LoggerWrap struct {
 	l Logger
 }
 
-func NewLogger(l Logger) *logger {
-	return &logger{l: l}
+func NewLogger(l Logger) *LoggerWrap {
+	return &LoggerWrap{l: l}
 }
 
-func (l *logger) Middleware(next http.Handler) http.Handler {
+func (l *LoggerWrap) Log(r RequestData, w ResponseData) {
+	l.l.Log(r, w)
+}
+
+func (l *LoggerWrap) Middleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -67,7 +71,7 @@ func (l *logger) Middleware(next http.Handler) http.Handler {
 			Duration: time.Since(start),
 		}
 
-		l.l.Log(requestData, *responseData)
+		l.Log(requestData, *responseData)
 	}
 
 	return http.HandlerFunc(fn)

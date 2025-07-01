@@ -14,9 +14,9 @@ type OrdersRepository struct {
 	mock.Mock
 }
 
-// AddOrder provides a mock function with given fields: _a0, _a1
-func (_m *OrdersRepository) AddOrder(_a0 string, _a1 int) (models.Order, error) {
-	ret := _m.Called(_a0, _a1)
+// AddOrder provides a mock function with given fields: _a0, _a1, _a2
+func (_m *OrdersRepository) AddOrder(_a0 context.Context, _a1 string, _a2 int) (models.Order, error) {
+	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddOrder")
@@ -24,17 +24,17 @@ func (_m *OrdersRepository) AddOrder(_a0 string, _a1 int) (models.Order, error) 
 
 	var r0 models.Order
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, int) (models.Order, error)); ok {
-		return rf(_a0, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, string, int) (models.Order, error)); ok {
+		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(string, int) models.Order); ok {
-		r0 = rf(_a0, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, string, int) models.Order); ok {
+		r0 = rf(_a0, _a1, _a2)
 	} else {
 		r0 = ret.Get(0).(models.Order)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, int) error); ok {
-		r1 = rf(_a0, _a1)
+	if rf, ok := ret.Get(1).(func(context.Context, string, int) error); ok {
+		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
 	}
