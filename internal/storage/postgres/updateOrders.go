@@ -58,7 +58,7 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 		// add balance to user
 		addBalance := order.Accrual - orderMementoBefore.GetAccrual()
 		if addBalance != 0 {
-			err = s.sqlc.UpdateBalance(ctx, sqlc.UpdateBalanceParams{
+			err = qtx.UpdateBalance(ctx, sqlc.UpdateBalanceParams{
 				Balance: addBalance,
 				ID:      order.UserID,
 			})
