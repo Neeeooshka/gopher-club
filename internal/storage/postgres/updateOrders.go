@@ -33,21 +33,9 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 		}
 	}()
 
-	rows := make([]sqlc.UpdateOrdersParams, len(orders))
-	for i, order := range orders {
-		rows[i] = sqlc.UpdateOrdersParams{
-			Status:  order.Status,
-			Accrual: order.Accrual,
-			ID:      order.ID,
-		}
-	}
-
 	qtx := s.sqlc.WithTx(tx)
-	result := qtx.UpdateOrders(ctx, rows)
-	if err = result.Close(); err != nil {
-		return fmt.Errorf("could not update orders: %w", err)
-	}
 
+	// add balance to users
 	for _, order := range orders {
 		// get accrual before update
 		orderMementoBefore, ok := order.GetMemento("beforeUpdate")
@@ -55,7 +43,6 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 			return fmt.Errorf("cannot get accrual before update")
 		}
 
-		// add balance to user
 		addBalance := order.Accrual - orderMementoBefore.GetAccrual()
 		if addBalance != 0 {
 			err = qtx.UpdateBalance(ctx, sqlc.UpdateBalanceParams{
@@ -66,6 +53,21 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 				return fmt.Errorf("could not update balance with userID %d: %w", order.UserID, err)
 			}
 		}
+	}
+
+	// update orders
+	rows := make([]sqlc.UpdateOrdersParams, len(orders))
+	for i, order := range orders {
+		rows[i] = sqlc.UpdateOrdersParams{
+			Status:  order.Status,
+			Accrual: order.Accrual,
+			ID:      order.ID,
+		}
+	}
+
+	result := qtx.UpdateOrders(ctx, rows)
+	if err = result.Close(); err != nil {
+		return fmt.Errorf("could not update orders: %w", err)
 	}
 
 	return tx.Commit(ctx)
