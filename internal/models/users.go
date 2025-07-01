@@ -1,6 +1,8 @@
 package models
 
-const UserContextKey = "AuthUser"
+type key string
+
+const UserContextKey key = "AuthUser"
 
 type User struct {
 	ID          int     `db:"ID"`

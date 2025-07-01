@@ -20,7 +20,7 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	withdraw := models.Withdraw{UserID: user.ID}
+	var withdraw models.Withdraw
 
 	if err := json.NewDecoder(r.Body).Decode(&withdraw); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -36,6 +36,8 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		w.WriteHeader(http.StatusPaymentRequired)
 		return
 	}
+
+	withdraw.UserID = user.ID
 
 	go func() {
 
