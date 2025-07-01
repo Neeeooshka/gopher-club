@@ -34,7 +34,7 @@ func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 		Password: password,
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	err = u.storage.AddUser(ctx, user, salt)
