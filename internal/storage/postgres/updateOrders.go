@@ -60,7 +60,7 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 		if addBalance != 0 {
 			err = s.sqlc.UpdateBalance(ctx, sqlc.UpdateBalanceParams{
 				Balance: addBalance,
-				ID:      order.ID,
+				ID:      order.UserID,
 			})
 			if err != nil {
 				return fmt.Errorf("could not update balance with userID %d: %w", order.UserID, err)
