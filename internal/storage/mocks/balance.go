@@ -45,7 +45,7 @@ func (_m *BalanceRepository) GetWithdrawals(_a0 context.Context, _a1 models.User
 }
 
 // GetWithdrawn provides a mock function with given fields: _a0, _a1
-func (_m *BalanceRepository) GetWithdrawn(_a0 context.Context, _a1 models.User) (float32, error) {
+func (_m *BalanceRepository) GetWithdrawn(_a0 context.Context, _a1 models.User) (float32, float32, error) {
 	ret := _m.Called(_a0, _a1)
 
 	if len(ret) == 0 {
@@ -53,8 +53,9 @@ func (_m *BalanceRepository) GetWithdrawn(_a0 context.Context, _a1 models.User) 
 	}
 
 	var r0 float32
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, models.User) (float32, error)); ok {
+	var r1 float32
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, models.User) (float32, float32, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, models.User) float32); ok {
@@ -63,13 +64,19 @@ func (_m *BalanceRepository) GetWithdrawn(_a0 context.Context, _a1 models.User) 
 		r0 = ret.Get(0).(float32)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, models.User) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, models.User) float32); ok {
 		r1 = rf(_a0, _a1)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(float32)
 	}
 
-	return r0, r1
+	if rf, ok := ret.Get(2).(func(context.Context, models.User) error); ok {
+		r2 = rf(_a0, _a1)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // WithdrawBalance provides a mock function with given fields: _a0, _a1

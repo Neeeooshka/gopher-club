@@ -8,7 +8,7 @@ import (
 
 type BalanceRepository interface {
 	GetWithdrawals(context.Context, models.User) ([]models.Withdraw, error)
-	GetWithdrawn(context.Context, models.User) (float32, error)
+	GetWithdrawn(context.Context, models.User) (float32, float32, error)
 	WithdrawBalance(context.Context, models.Withdraw) error
 }
 
