@@ -1,14 +1,25 @@
 package models
 
-import "time"
+import (
+	"time"
+)
+
+type orderStatus string
+
+const (
+	OrderStatusNew        orderStatus = "NEW"
+	OrderStatusProcessing orderStatus = "PROCESSING"
+	OrderStatusInvalid    orderStatus = "INVALID"
+	OrderStatusProcessed  orderStatus = "PROCESSED"
+)
 
 type Order struct {
-	ID         int       `db:"id" json:"-"`
-	UserID     int       `db:"user_id" json:"-"`
-	Number     string    `db:"num" json:"number"`
-	DateInsert time.Time `db:"date_insert" json:"uploaded_at"`
-	Accrual    float32   `db:"accrual" json:"accrual,omitempty"`
-	Status     string    `db:"status" json:"status"`
+	ID         int         `db:"id" json:"-"`
+	UserID     int         `db:"user_id" json:"-"`
+	Number     string      `db:"num" json:"number"`
+	DateInsert time.Time   `db:"date_insert" json:"uploaded_at"`
+	Accrual    float32     `db:"accrual" json:"accrual,omitempty"`
+	Status     orderStatus `db:"status" json:"status"`
 	mementos   map[string]orderMemento
 }
 
@@ -26,7 +37,7 @@ func (o *Order) GetMemento(state string) (orderMemento, bool) {
 
 type orderMemento struct {
 	accrual float32
-	status  string
+	status  orderStatus
 }
 
 func (m *orderMemento) GetAccrual() float32 {

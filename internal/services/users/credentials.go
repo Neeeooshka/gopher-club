@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	"github.com/Neeeooshka/gopher-club/internal/models"
 )
 

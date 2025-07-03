@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
-	"net/http"
-	"time"
 )
 
 func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.Request) {

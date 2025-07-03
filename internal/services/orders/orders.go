@@ -3,17 +3,10 @@ package orders
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strconv"
+
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/models"
-	"strconv"
-)
-
-const (
-	StatusNew        = "NEW"
-	StatusProcessing = "PROCESSING"
-	StatusInvalid    = "INVALID"
-	StatusProcessed  = "PROCESSED"
 )
 
 type OrdersRepository interface {
@@ -28,17 +21,11 @@ type OrdersService struct {
 	updateService *OrdersUpdateService
 }
 
-func NewOrdersService(or interface{}, opt config.Options) OrdersService {
+func NewOrdersService(repo OrdersRepository, opt config.Options) OrdersService {
 
 	var os OrdersService
 
-	ordersRepo, ok := or.(OrdersRepository)
-
-	if !ok {
-		os.errors = append(os.errors, fmt.Errorf("2th argument expected OrdersRepository, got %T", or))
-	}
-
-	ous, err := NewOrdersUpdateService(or, opt)
+	ous, err := NewOrdersUpdateService(repo.(OrdersUpdateRepository), opt)
 
 	if err != nil {
 		os.errors = append(os.errors, errors.New("cannot initialize OrdersUpdateService"))
@@ -48,7 +35,7 @@ func NewOrdersService(or interface{}, opt config.Options) OrdersService {
 		return os
 	}
 
-	os.storage = ordersRepo
+	os.storage = repo
 	os.updateService = ous
 	os.init = true
 

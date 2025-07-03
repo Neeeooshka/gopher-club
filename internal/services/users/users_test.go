@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/internal/storage/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 var testUser = models.User{

@@ -3,9 +3,10 @@ package users
 import (
 	"context"
 	"fmt"
-	"github.com/Neeeooshka/gopher-club/internal/models"
 	"net/http"
 	"strings"
+
+	"github.com/Neeeooshka/gopher-club/internal/models"
 )
 
 type UserRepository interface {
@@ -19,21 +20,11 @@ type UserService struct {
 	storage UserRepository
 }
 
-func NewUserService(ur interface{}) UserService {
+func NewUserService(repo UserRepository) UserService {
 
 	var us UserService
 
-	userRepo, ok := ur.(UserRepository)
-
-	if !ok {
-		us.errors = append(us.errors, fmt.Errorf("2th argument expected UserRepository, got %T", ur))
-	}
-
-	if len(us.errors) > 0 {
-		return us
-	}
-
-	us.storage = userRepo
+	us.storage = repo
 	us.init = true
 
 	return us

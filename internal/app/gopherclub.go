@@ -1,6 +1,9 @@
 package app
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/services/balance"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
@@ -9,8 +12,6 @@ import (
 	"github.com/Neeeooshka/gopher-club/pkg/compressor"
 	"github.com/Neeeooshka/gopher-club/pkg/logger"
 	"github.com/go-chi/chi/v5"
-	"log"
-	"net/http"
 )
 
 type HealthChecker interface {
@@ -38,9 +39,9 @@ func NewGopherClubAppInstance(opt config.Options, s storage.Storage) *GopherClub
 		storage: s,
 		Router:  chi.NewRouter(),
 
-		BalanceService: balance.NewBalanceService(s),
-		OrdersService:  orders.NewOrdersService(s, opt),
-		UserService:    users.NewUserService(s),
+		BalanceService: balance.NewBalanceService(s.(balance.BalanceRepository)),
+		OrdersService:  orders.NewOrdersService(s.(orders.OrdersRepository), opt),
+		UserService:    users.NewUserService(s.(users.UserRepository)),
 	}
 
 	return instance

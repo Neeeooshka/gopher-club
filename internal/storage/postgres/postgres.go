@@ -4,11 +4,12 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"io/fs"
+	"time"
+
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/tern/v2/migrate"
-	"io/fs"
-	"time"
 )
 
 const versionTable = "gophermart_schema_versions"

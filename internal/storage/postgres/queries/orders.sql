@@ -4,6 +4,7 @@ with ins as (
     on conflict (num) do nothing
     returning *, true as is_new
 )
+
 select * from ins
 union all
 select *, false as is_new from gopher_orders where num = $2

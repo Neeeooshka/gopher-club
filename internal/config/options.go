@@ -17,7 +17,7 @@ func (o *Options) GetServer() string {
 	return o.ServerAddress.String()
 }
 
-func (o *Options) GetAccrualSystem() string {
+func (o *Options) AccrualSystem() string {
 	return o.AccrualAddress.String()
 }
 
@@ -32,18 +32,18 @@ func (s *ServerAddress) String() string {
 
 func (s *ServerAddress) Set(flag string) error {
 
-	ss := strings.Split(flag, ":")
+	addressParts := strings.Split(flag, ":")
 
-	if len(ss) != 2 {
-		return errors.New("invalid server argument")
+	if len(addressParts) != 2 {
+		return errors.New("invalid server argument, expected host:port")
 	}
-	sp, err := strconv.Atoi(ss[1])
+	port, err := strconv.Atoi(addressParts[1])
 	if err != nil {
 		return err
 	}
 
-	s.Host = ss[0]
-	s.Port = sp
+	s.Host = addressParts[0]
+	s.Port = port
 
 	return nil
 }

@@ -7,8 +7,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const passKey = "supergophermarket"

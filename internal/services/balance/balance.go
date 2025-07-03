@@ -2,7 +2,6 @@ package balance
 
 import (
 	"context"
-	"fmt"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 )
 
@@ -18,21 +17,11 @@ type BalanceService struct {
 	storage BalanceRepository
 }
 
-func NewBalanceService(or interface{}) BalanceService {
+func NewBalanceService(repo BalanceRepository) BalanceService {
 
 	var bs BalanceService
 
-	balanceRepo, ok := or.(BalanceRepository)
-
-	if !ok {
-		bs.errors = append(bs.errors, fmt.Errorf("2th argument expected BalanceRepository, got %T", or))
-	}
-
-	if len(bs.errors) > 0 {
-		return bs
-	}
-
-	bs.storage = balanceRepo
+	bs.storage = repo
 	bs.init = true
 
 	return bs

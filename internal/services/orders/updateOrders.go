@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
-	"net/http"
 	"resty.dev/v3"
-	"time"
 )
 
 type OrdersUpdateRepository interface {
@@ -25,15 +26,9 @@ type OrdersUpdateService struct {
 	waitingOrders  []models.Order
 }
 
-func NewOrdersUpdateService(our interface{}, opt config.Options) (*OrdersUpdateService, error) {
+func NewOrdersUpdateService(repo OrdersUpdateRepository, opt config.Options) (*OrdersUpdateService, error) {
 
 	var ous OrdersUpdateService
-
-	repo, ok := our.(OrdersUpdateRepository)
-
-	if !ok {
-		return nil, fmt.Errorf("2th argument expected OrdersUpdateRepository, got %T", our)
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -100,7 +95,7 @@ func (o *OrdersUpdateService) updateOrders() {
 	r := client.R()
 
 	for _, order := range o.waitingOrders {
-		res, err := r.Get(fmt.Sprintf(o.opt.GetAccrualSystem()+"/api/orders/%s", order.Number))
+		res, err := r.Get(fmt.Sprintf(o.opt.AccrualSystem()+"/api/orders/%s", order.Number))
 		if err != nil {
 			zap.Log.Debug("cannot connect to the Loyalty calculation system", zap.Log.Error(err))
 			return
@@ -165,7 +160,7 @@ func (o *OrdersUpdateService) applyUpdates(ordersForUpdateMap map[string]models.
 	for _, order := range o.waitingOrders {
 		if ord, ok := ordersForUpdateMap[order.Number]; ok {
 			ordersForUpdate = append(ordersForUpdate, ord)
-			if ord.Status == StatusProcessed || ord.Status == StatusInvalid {
+			if ord.Status == models.OrderStatusProcessed || ord.Status == models.OrderStatusInvalid {
 				continue
 			}
 

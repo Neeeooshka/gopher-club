@@ -2,15 +2,16 @@ package orders
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"testing"
+	"time"
+
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"log"
-	"net/http"
-	"testing"
-	"time"
 )
 
 const accrualSystemAddress = "localhost"
@@ -103,7 +104,7 @@ func TestUpdateOrders(t *testing.T) {
 
 	service := OrdersUpdateService{
 		storage:        mockRepo,
-		waitingOrders:  []models.Order{{Number: "4532015112830366", Status: StatusNew}},
+		waitingOrders:  []models.Order{{Number: "4532015112830366", Status: models.OrderStatusNew}},
 		opt:            opt,
 		updateInterval: time.Second,
 	}
@@ -120,11 +121,11 @@ func TestUpdateOrdersProcessor(t *testing.T) {
 	mockRepo := new(MockOrdersUpdateRepository)
 	mockRepo.On("UpdateOrders", mock.Anything, mock.Anything).Return(nil)
 
-	order := models.Order{Number: "4532015112830366", Status: StatusProcessed}
+	order := models.Order{Number: "4532015112830366", Status: models.OrderStatusProcessed}
 
 	service := OrdersUpdateService{
 		storage:       mockRepo,
-		waitingOrders: []models.Order{{Number: order.Number, Status: StatusNew}},
+		waitingOrders: []models.Order{{Number: order.Number, Status: models.OrderStatusNew}},
 	}
 
 	dataCh := make(chan models.Order)
@@ -143,7 +144,7 @@ func TestApplyUpdates(t *testing.T) {
 	mockRepo := new(MockOrdersUpdateRepository)
 	mockRepo.On("UpdateOrders", mock.Anything, mock.Anything).Return(nil)
 
-	order := models.Order{Number: "4532015112830366", Status: StatusProcessing}
+	order := models.Order{Number: "4532015112830366", Status: models.OrderStatusProcessing}
 
 	service := OrdersUpdateService{
 		storage:       mockRepo,
@@ -151,7 +152,7 @@ func TestApplyUpdates(t *testing.T) {
 	}
 
 	updates := map[string]models.Order{
-		order.Number: {Number: order.Number, Status: StatusProcessed},
+		order.Number: {Number: order.Number, Status: models.OrderStatusProcessed},
 	}
 
 	service.applyUpdates(updates)

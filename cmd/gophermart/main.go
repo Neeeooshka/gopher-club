@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/Neeeooshka/gopher-club/internal/wire"
@@ -10,7 +11,7 @@ import (
 func main() {
 	appInstance, cleanup, err := wire.InitializeApp()
 	if err != nil {
-		panic(err)
+		log.Fatalf("не удалось инициализировать приложение: %v", err)
 	}
 	defer cleanup()
 

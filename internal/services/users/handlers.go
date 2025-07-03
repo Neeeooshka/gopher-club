@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/Neeeooshka/gopher-club/internal/models"
-	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"net/http"
 	"time"
+
+	"github.com/Neeeooshka/gopher-club/internal/models"
+	"github.com/Neeeooshka/gopher-club/internal/storage"
 )
 
 func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {

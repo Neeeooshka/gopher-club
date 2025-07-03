@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
@@ -10,26 +11,26 @@ import (
 
 func (s *Postgres) AddOrder(ctx context.Context, number string, userID int) (models.Order, error) {
 
-	var order models.Order
-
 	result, err := s.sqlc.AddOrder(ctx, sqlc.AddOrderParams{UserID: userID, Num: number})
 	if err != nil {
-		return order, fmt.Errorf("error adding order: %w", err)
+		return models.Order{}, fmt.Errorf("error adding order: %w", err)
 	}
 
 	if !result.IsNew {
 		if result.UserID == userID {
-			return order, storage.NewConflictOrderError(number)
+			return models.Order{}, storage.NewConflictOrderError(number)
 		}
-		return order, storage.NewConflictOrderUserError(result.UserID, number)
+		return models.Order{}, storage.NewConflictOrderUserError(result.UserID, number)
 	}
 
-	order.ID = result.ID
-	order.UserID = result.UserID
-	order.Number = result.Num
-	order.Status = result.Status
-	order.Accrual = result.Accrual
-	order.DateInsert = result.DateInsert
+	order := models.Order{
+		ID:         result.ID,
+		UserID:     result.UserID,
+		Number:     result.Num,
+		Status:     result.Status,
+		Accrual:    result.Accrual,
+		DateInsert: result.DateInsert,
+	}
 
 	return order, nil
 }

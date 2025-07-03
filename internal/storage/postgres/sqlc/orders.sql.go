@@ -16,6 +16,7 @@ with ins as (
     on conflict (num) do nothing
     returning id, user_id, num, date_insert, accrual, status, true as is_new
 )
+
 select id, user_id, num, date_insert, accrual, status, is_new from ins
 union all
 select id, user_id, num, date_insert, accrual, status, false as is_new from gopher_orders where num = $2
@@ -33,7 +34,7 @@ type AddOrderRow struct {
 	Num        string
 	DateInsert time.Time
 	Accrual    float32
-	Status     string
+	Status     NullOrderStatus
 	IsNew      bool
 }
 

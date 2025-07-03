@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
 	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"

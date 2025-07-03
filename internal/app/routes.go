@@ -1,9 +1,10 @@
 package app
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"net/http"
 )
 
 func (a *GopherClubApp) InitializeRoutes() {
@@ -52,13 +53,12 @@ func (a *GopherClubApp) getMiddlewares() []func(http.Handler) http.Handler {
 	// HealthChecker UserService for all requests
 	middlewares = append(middlewares, a.HealthCheckMiddleware(&a.UserService))
 
-	// compressor reader
 	if a.compressor != nil {
+		// compressor reader
 		middlewares = append(middlewares, a.compressor.Middleware)
+		// compressor writer
+		middlewares = append(middlewares, middleware.Compress(5, a.compressor.GetEncoding()))
 	}
-
-	// compressor writer
-	middlewares = append(middlewares, middleware.Compress(5, a.compressor.GetEncoding()))
 
 	return middlewares
 }
