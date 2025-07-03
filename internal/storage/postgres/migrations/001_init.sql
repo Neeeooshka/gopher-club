@@ -38,7 +38,7 @@ CREATE INDEX IF NOT EXISTS withdrawals_num_idx ON gopher_withdrawals (num);
 
 ---- create above / drop below ----
 
-DROP TABLE IF EXISTS gopher_users;
+DROP TABLE gopher_users;
 DROP TABLE IF EXISTS gopher_user_params;
 DROP TABLE IF EXISTS gopher_orders;
 DROP TABLE IF EXISTS gopher_withdrawals;
