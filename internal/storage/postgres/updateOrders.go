@@ -60,7 +60,7 @@ func (s *Postgres) UpdateOrders(ctx context.Context, orders []models.Order) erro
 	rows := make([]sqlc.UpdateOrdersParams, len(orders))
 	for i, order := range orders {
 		rows[i] = sqlc.UpdateOrdersParams{
-			Status:  order.Status,
+			Status:  sqlc.NullOrderStatus{OrderStatus: sqlc.OrderStatus(order.Status), Valid: true},
 			Accrual: order.Accrual,
 			ID:      order.ID,
 		}

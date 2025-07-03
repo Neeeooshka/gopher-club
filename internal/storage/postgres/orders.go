@@ -27,7 +27,7 @@ func (s *Postgres) AddOrder(ctx context.Context, number string, userID int) (mod
 		ID:         result.ID,
 		UserID:     result.UserID,
 		Number:     result.Num,
-		Status:     result.Status,
+		Status:     models.OrderStatus(result.Status.OrderStatus),
 		Accrual:    result.Accrual,
 		DateInsert: result.DateInsert,
 	}
@@ -54,7 +54,7 @@ func (s *Postgres) extractOrders(results []sqlc.GopherOrder) []models.Order {
 			ID:         result.ID,
 			UserID:     result.UserID,
 			Number:     result.Num,
-			Status:     result.Status,
+			Status:     models.OrderStatus(result.Status.OrderStatus),
 			Accrual:    result.Accrual,
 			DateInsert: result.DateInsert,
 		}

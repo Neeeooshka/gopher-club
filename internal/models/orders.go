@@ -4,13 +4,13 @@ import (
 	"time"
 )
 
-type orderStatus string
+type OrderStatus string
 
 const (
-	OrderStatusNew        orderStatus = "NEW"
-	OrderStatusProcessing orderStatus = "PROCESSING"
-	OrderStatusInvalid    orderStatus = "INVALID"
-	OrderStatusProcessed  orderStatus = "PROCESSED"
+	OrderStatusNew        OrderStatus = "NEW"
+	OrderStatusProcessing OrderStatus = "PROCESSING"
+	OrderStatusInvalid    OrderStatus = "INVALID"
+	OrderStatusProcessed  OrderStatus = "PROCESSED"
 )
 
 type Order struct {
@@ -19,7 +19,7 @@ type Order struct {
 	Number     string      `db:"num" json:"number"`
 	DateInsert time.Time   `db:"date_insert" json:"uploaded_at"`
 	Accrual    float32     `db:"accrual" json:"accrual,omitempty"`
-	Status     orderStatus `db:"status" json:"status"`
+	Status     OrderStatus `db:"status" json:"status"`
 	mementos   map[string]orderMemento
 }
 
@@ -37,7 +37,7 @@ func (o *Order) GetMemento(state string) (orderMemento, bool) {
 
 type orderMemento struct {
 	accrual float32
-	status  orderStatus
+	status  OrderStatus
 }
 
 func (m *orderMemento) GetAccrual() float32 {
