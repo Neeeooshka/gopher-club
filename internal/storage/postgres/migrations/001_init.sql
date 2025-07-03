@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS gopher_users (
+CREATE TABLE gopher_users (
     id SERIAL PRIMARY KEY,
     login TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
