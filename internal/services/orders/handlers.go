@@ -1,16 +1,13 @@
 package orders
 
 import (
-	"context"
 	"errors"
-	"io"
-	"net/http"
-	"time"
-
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
+	"io"
+	"net/http"
 )
 
 func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,10 +64,7 @@ func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	orders, err := o.storage.ListUserOrders(ctx, user)
+	orders, err := o.storage.ListUserOrders(r.Context(), user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

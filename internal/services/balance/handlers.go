@@ -1,16 +1,12 @@
 package balance
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"net/http"
-	"time"
-
+	"github.com/Neeeooshka/gopher-club/internal/dto"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
-	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
+	"net/http"
 )
 
 func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,17 +34,12 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	go func() {
+	err := b.storage.WithdrawBalance(r.Context(), withdraw)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-		defer cancel()
-
-		err := b.storage.WithdrawBalance(ctx, withdraw)
-
-		if err != nil {
-			zap.Log.Debug(fmt.Sprintf("cannot withdraw balance for user %d", user.ID), zap.Log.Error(err))
-		}
-	}()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -61,24 +52,16 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	withdrawn, err := b.storage.GetWithdrawn(ctx, user)
+	withdrawn, err := b.storage.GetWithdrawn(r.Context(), user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	balance := struct {
-		Balance  float32 `json:"current"`
-		Withdraw float32 `json:"withdrawn"`
-	}{
+	httputil.WriteJSON(w, dto.Balance{
 		Balance:  user.Balance,
 		Withdraw: withdrawn,
-	}
-
-	httputil.WriteJSON(w, balance)
+	})
 }
 
 func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
@@ -89,10 +72,7 @@ func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	withdrawals, err := b.storage.GetWithdrawals(ctx, user)
+	withdrawals, err := b.storage.GetWithdrawals(r.Context(), user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

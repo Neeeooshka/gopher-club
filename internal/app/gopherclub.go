@@ -1,8 +1,10 @@
 package app
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/services/balance"
@@ -73,4 +75,18 @@ func (a *GopherClubApp) HealthCheckMiddleware(service HealthChecker) func(http.H
 
 		return http.HandlerFunc(fn)
 	}
+}
+
+func (a *GopherClubApp) TimeoutMiddleware(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+		defer cancel()
+
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	}
+
+	return http.HandlerFunc(fn)
 }

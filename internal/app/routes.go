@@ -60,5 +60,8 @@ func (a *GopherClubApp) getMiddlewares() []func(http.Handler) http.Handler {
 		middlewares = append(middlewares, middleware.Compress(5, a.compressor.GetEncoding()))
 	}
 
+	// set timeout for all requests
+	middlewares = append(middlewares, a.TimeoutMiddleware)
+
 	return middlewares
 }

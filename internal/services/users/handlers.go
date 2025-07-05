@@ -1,14 +1,11 @@
 package users
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"net/http"
-	"time"
-
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
+	"net/http"
 )
 
 func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,10 +32,7 @@ func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 		Password: password,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	err = u.storage.AddUser(ctx, user, salt)
+	err = u.storage.AddUser(r.Context(), user, salt)
 	var ce *storage.ConflictUserError
 	if err != nil {
 		if errors.As(err, &ce) {

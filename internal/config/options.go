@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -27,25 +28,59 @@ type ServerAddress struct {
 }
 
 func (s *ServerAddress) String() string {
-	return s.Host + ":" + strconv.Itoa(s.Port)
+	return fmt.Sprintf("%s:%d", s.Host, s.Port)
 }
 
 func (s *ServerAddress) Set(flag string) error {
 
-	addressParts := strings.Split(flag, ":")
-
-	if len(addressParts) != 2 {
-		return errors.New("invalid server argument, expected host:port")
-	}
-	port, err := strconv.Atoi(addressParts[1])
+	builder, err := NewServerAddressBuilder().FromString(flag)
 	if err != nil {
 		return err
 	}
 
-	s.Host = addressParts[0]
-	s.Port = port
+	*s = builder.Build()
 
 	return nil
+}
+
+type ServerAddressBuilder struct {
+	serverAddress ServerAddress
+}
+
+func NewServerAddressBuilder() *ServerAddressBuilder {
+	return &ServerAddressBuilder{}
+}
+
+func (b *ServerAddressBuilder) WithHost(host string) *ServerAddressBuilder {
+	b.serverAddress.Host = host
+	return b
+}
+
+func (b *ServerAddressBuilder) WithPort(port int) *ServerAddressBuilder {
+	b.serverAddress.Port = port
+	return b
+}
+
+func (b *ServerAddressBuilder) FromString(addr string) (*ServerAddressBuilder, error) {
+
+	addressParts := strings.Split(addr, ":")
+
+	if len(addressParts) != 2 {
+		return nil, errors.New("invalid server argument, expected host:port")
+	}
+	port, err := strconv.Atoi(addressParts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid port: %v", err)
+	}
+
+	b.serverAddress.Host = addressParts[0]
+	b.serverAddress.Port = port
+
+	return b, nil
+}
+
+func (b *ServerAddressBuilder) Build() ServerAddress {
+	return b.serverAddress
 }
 
 type AccrualSystem struct {

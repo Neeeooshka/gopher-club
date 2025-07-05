@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -15,8 +14,5 @@ func main() {
 	}
 	defer cleanup()
 
-	err = http.ListenAndServe(appInstance.Options.GetServer(), appInstance.Router)
-	if err != nil {
-		panic(fmt.Errorf("error starting server: %s", err))
-	}
+	log.Fatal(http.ListenAndServe(appInstance.Options.GetServer(), appInstance.Router))
 }
