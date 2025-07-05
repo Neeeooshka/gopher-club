@@ -1,0 +1,39 @@
+version: "2"
+overrides:
+  go:
+    overrides:
+      - db_type: pg_catalog.timestamptz
+        engine: postgresql
+        nullable: true
+        go_type: time.Time
+      - db_type: text
+        engine: postgresql
+        nullable: true
+        go_type: string
+      - db_type: pg_catalog.numeric
+        engine: postgresql
+        go_type: float32
+      - db_type: pg_catalog.numeric
+        engine: postgresql
+        nullable: true
+        go_type: float32
+      - db_type: serial
+        engine: postgresql
+        go_type: int
+      - db_type: pg_catalog.int4
+        engine: postgresql
+        go_type: int
+      - db_type: bigint
+        engine: postgresql
+        go_type: float32
+sql:
+  - schema: "internal/storage/postgres/migrations/"
+    engine: "postgresql"
+    queries: "internal/storage/postgres/queries/"
+    gen:
+      go:
+        package: "sqlc"
+        out: "internal/storage/postgres/sqlc"
+        sql_package: "pgx/v5"
+        overrides:
+          -
