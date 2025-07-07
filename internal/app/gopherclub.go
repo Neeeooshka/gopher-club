@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/Neeeooshka/gopher-club/internal/config"
-	"github.com/Neeeooshka/gopher-club/internal/services/balance"
-	"github.com/Neeeooshka/gopher-club/internal/services/orders"
-	"github.com/Neeeooshka/gopher-club/internal/services/users"
+	"github.com/Neeeooshka/gopher-club/internal/servers/balance"
+	"github.com/Neeeooshka/gopher-club/internal/servers/orders"
+	"github.com/Neeeooshka/gopher-club/internal/servers/users"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/pkg/compressor"
 	"github.com/Neeeooshka/gopher-club/pkg/logger"
@@ -17,7 +17,7 @@ import (
 )
 
 type HealthChecker interface {
-	HealthCheck() ([]error, bool)
+	HealthCheck() bool
 	GetName() string
 }
 
@@ -26,9 +26,9 @@ type GopherClubApp struct {
 	storage storage.Storage
 	Router  *chi.Mux
 
-	BalanceService balance.BalanceService
-	OrdersService  orders.OrdersService
-	UserService    users.UserService
+	BalanceServer balance.BalanceServer
+	OrdersServer  orders.OrdersServer
+	UserServer    users.UserServer
 
 	logger     *logger.LoggerWrap
 	compressor *compressor.CompressorWrap
@@ -36,14 +36,19 @@ type GopherClubApp struct {
 
 func NewGopherClubAppInstance(opt config.Options, s storage.Storage) *GopherClubApp {
 
+	ordersServer, err := orders.NewOrdersServer(s.(orders.OrdersRepository), opt)
+	if err != nil {
+		log.Fatalf("cannot start ordersServer: %v", err)
+	}
+
 	instance := &GopherClubApp{
 		Options: opt,
 		storage: s,
 		Router:  chi.NewRouter(),
 
-		BalanceService: balance.NewBalanceService(s.(balance.BalanceRepository)),
-		OrdersService:  orders.NewOrdersService(s.(orders.OrdersRepository), opt),
-		UserService:    users.NewUserService(s.(users.UserRepository)),
+		BalanceServer: balance.NewBalanceServer(s.(balance.BalanceRepository)),
+		OrdersServer:  ordersServer,
+		UserServer:    users.NewUserServer(s.(users.UserRepository)),
 	}
 
 	return instance
@@ -64,8 +69,8 @@ func (a *GopherClubApp) HealthCheckMiddleware(service HealthChecker) func(http.H
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 
-			if errs, init := service.HealthCheck(); !init || errs != nil {
-				log.Printf("Serice %s unavailabale: %v", service.GetName(), errs)
+			if !service.HealthCheck() {
+				log.Printf("Serice %s unavailabale", service.GetName())
 				w.WriteHeader(http.StatusServiceUnavailable)
 				return
 			}

@@ -14,23 +14,16 @@ type UserRepository interface {
 	GetUserByLogin(string) (models.User, error)
 }
 
-type UserService struct {
-	errors  []error
+type UserServer struct {
 	init    bool
 	storage UserRepository
 }
 
-func NewUserService(repo UserRepository) UserService {
-
-	var us UserService
-
-	us.storage = repo
-	us.init = true
-
-	return us
+func NewUserServer(repo UserRepository) UserServer {
+	return UserServer{storage: repo, init: true}
 }
 
-func (u *UserService) AuthMiddleware(next http.Handler) http.Handler {
+func (u *UserServer) AuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 
 		token := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
@@ -49,7 +42,7 @@ func (u *UserService) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func (u *UserService) Authenticate(jwtToken string) (models.User, error) {
+func (u *UserServer) Authenticate(jwtToken string) (models.User, error) {
 
 	var user models.User
 
@@ -66,7 +59,7 @@ func (u *UserService) Authenticate(jwtToken string) (models.User, error) {
 	return user, nil
 }
 
-func (u *UserService) Authorize(cr credentials) (string, error) {
+func (u *UserServer) Authorize(cr credentials) (string, error) {
 
 	user, err := u.storage.GetUserByLogin(cr.Login)
 	if err != nil {
@@ -81,10 +74,10 @@ func (u *UserService) Authorize(cr credentials) (string, error) {
 	return CreateJWTToken(user.Login)
 }
 
-func (u *UserService) HealthCheck() ([]error, bool) {
-	return u.errors, u.init
+func (u *UserServer) HealthCheck() bool {
+	return u.init
 }
 
-func (u *UserService) GetName() string {
-	return "UserService"
+func (u *UserServer) GetName() string {
+	return "UserServer"
 }

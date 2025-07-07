@@ -11,3 +11,7 @@ type User struct {
 	Credentials string  `db:"credentials"`
 	Balance     float32 `db:"balance"`
 }
+
+func (u *User) CanWithdraw(sum float32) bool {
+	return u.Balance >= sum
+}

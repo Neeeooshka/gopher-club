@@ -27,13 +27,11 @@ overrides:
         engine: postgresql
         go_type: float32
 sql:
-  - schema: "internal/storage/postgres/migrations/"
+  - schema: "internal/storage/repository/migrations/"
     engine: "postgresql"
-    queries: "internal/storage/postgres/queries/"
+    queries: "internal/storage/repository/queries/"
     gen:
       go:
         package: "sqlc"
-        out: "internal/storage/postgres/sqlc"
+        out: "internal/storage/repository/sqlc"
         sql_package: "pgx/v5"
-        overrides:
-          -

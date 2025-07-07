@@ -1,4 +1,4 @@
-package postgres
+package repository
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
-	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
+	"github.com/Neeeooshka/gopher-club/internal/storage/repository/sqlc"
 )
 
 func (s *Postgres) AddOrder(ctx context.Context, number string, userID int) (models.Order, error) {
@@ -45,7 +45,7 @@ func (s *Postgres) ListUserOrders(ctx context.Context, user models.User) ([]mode
 	return s.extractOrders(results), nil
 }
 
-func (s *Postgres) extractOrders(results []sqlc.GopherOrder) []models.Order {
+func (s *Postgres) extractOrders(results []sqlc.Order) []models.Order {
 
 	orders := make([]models.Order, len(results))
 

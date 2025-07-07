@@ -10,7 +10,7 @@ import (
 )
 
 const addCredentials = `-- name: AddCredentials :exec
-insert into gopher_user_params (user_id, p_name, p_value) values (
+INSERT INTO user_key_value (user_id, p_name, p_value) VALUES (
     $1, 'credentials', $2
 )
 `
@@ -26,16 +26,16 @@ func (q *Queries) AddCredentials(ctx context.Context, arg AddCredentialsParams) 
 }
 
 const addUser = `-- name: AddUser :one
-with ins as (
-    insert into gopher_users (login, password) values ($1, $2)
-    on conflict (login) do nothing
-    returning id
+WITH ins AS (
+    INSERT INTO users (login, password) VALUES ($1, $2)
+    ON CONFLICT (login) DO NOTHING
+    RETURNING id
 )
 
-select id, true as is_new from ins
-union all
-select id, false as is_new from gopher_users where login = $1
-limit 1
+SELECT id, TRUE AS is_new FROM ins
+UNION ALL
+SELECT id, FALSE AS is_new FROM users WHERE login = $1
+LIMIT 1
 `
 
 type AddUserParams struct {
@@ -56,10 +56,10 @@ func (q *Queries) AddUser(ctx context.Context, arg AddUserParams) (AddUserRow, e
 }
 
 const getUserByLogin = `-- name: GetUserByLogin :one
-select u.id, u.login, u.password, u.balance, up.p_value as credentials from gopher_users u
-    join gopher_user_params up on up.user_id = u.id and p_name = 'credentials'
-where u.login = $1
-limit 1
+SELECT u.id, u.login, u.password, u.balance, up.p_value AS credentials FROM users u
+    JOIN user_key_value up ON up.user_id = u.id AND p_name = 'credentials'
+WHERE u.login = $1
+LIMIT 1
 `
 
 type GetUserByLoginRow struct {
@@ -84,7 +84,7 @@ func (q *Queries) GetUserByLogin(ctx context.Context, login string) (GetUserByLo
 }
 
 const updateBalance = `-- name: UpdateBalance :exec
-update gopher_users set balance = balance + $1 where id = $2
+UPDATE users SET balance = balance + $1 WHERE id = $2
 `
 
 type UpdateBalanceParams struct {

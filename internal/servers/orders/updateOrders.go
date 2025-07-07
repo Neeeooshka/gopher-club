@@ -14,7 +14,6 @@ import (
 )
 
 type OrdersUpdateRepository interface {
-	ListWaitingOrders(context.Context) ([]models.Order, error)
 	UpdateOrders(context.Context, []models.Order) error
 }
 
@@ -26,26 +25,18 @@ type OrdersUpdateService struct {
 	waitingOrders  []models.Order
 }
 
-func NewOrdersUpdateService(repo OrdersUpdateRepository, opt config.Options) (*OrdersUpdateService, error) {
+func NewOrdersUpdateService(repo OrdersUpdateRepository, opt config.Options, waitingOrders []models.Order) (*OrdersUpdateService, error) {
 
-	var ous OrdersUpdateService
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	orders, err := repo.ListWaitingOrders(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("unable to request order details: %w", err)
+	ordersUpdateService := OrdersUpdateService{
+		opt:            opt,
+		storage:        repo,
+		updateInterval: time.Second,
+		waitingOrders:  waitingOrders,
 	}
 
-	ous.opt = opt
-	ous.storage = repo
-	ous.updateInterval = time.Second
-	ous.waitingOrders = orders
+	go ordersUpdateService.ordersUpdater()
 
-	go ous.ordersUpdater()
-
-	return &ous, nil
+	return &ordersUpdateService, nil
 }
 
 func (o *OrdersUpdateService) AddWaitingOrder(order models.Order) {

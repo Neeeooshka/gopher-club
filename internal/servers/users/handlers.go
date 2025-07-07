@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
+func (u *UserServer) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var cr credentials
 
@@ -54,7 +54,7 @@ func (u *UserService) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusOK)
 }
 
-func (u *UserService) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
+func (u *UserServer) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var cr credentials
 

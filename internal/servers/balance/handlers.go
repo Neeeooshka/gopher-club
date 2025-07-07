@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"github.com/Neeeooshka/gopher-club/internal/dto"
 	"github.com/Neeeooshka/gopher-club/internal/models"
-	"github.com/Neeeooshka/gopher-club/internal/services/orders"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
+	"github.com/Neeeooshka/gopher-club/pkg/utils"
 	"net/http"
 )
 
-func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.Request) {
+func (b *BalanceServer) WithdrawBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(models.UserContextKey).(models.User)
 	if !ok {
@@ -24,12 +24,12 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if !orders.CheckLuhn(withdraw.OrderNum) {
+	if !utils.CheckLuhn(withdraw.OrderNum) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	if user.Balance < withdraw.Sum {
+	if !user.CanWithdraw(withdraw.Sum) {
 		w.WriteHeader(http.StatusPaymentRequired)
 		return
 	}
@@ -44,7 +44,7 @@ func (b *BalanceService) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusOK)
 }
 
-func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Request) {
+func (b *BalanceServer) GetUserBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(models.UserContextKey).(models.User)
 	if !ok {
@@ -64,7 +64,7 @@ func (b *BalanceService) GetUserBalanceHandler(w http.ResponseWriter, r *http.Re
 	})
 }
 
-func (b *BalanceService) GetUserWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
+func (b *BalanceServer) GetUserWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(models.UserContextKey).(models.User)
 	if !ok {

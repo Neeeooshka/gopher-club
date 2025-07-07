@@ -28,7 +28,7 @@ func TestLoginUserHandler(t *testing.T) {
 	repo.On("GetUserByLogin", testUser.Login).Return(testUser, nil)
 	repo.On("GetUserByLogin", "nonexistent").Return(models.User{}, errors.New("user not found"))
 
-	service := NewUserService(repo)
+	service := NewUserServer(repo)
 
 	tests := []struct {
 		name           string
@@ -93,7 +93,7 @@ func TestRegisterUserHandler(t *testing.T) {
 	repo.On("AddUser", mock.Anything, mock.MatchedBy(func(u models.User) bool { return u.Login == "existinguser" }), mock.Anything).Return(ce)
 	repo.On("GetUserByLogin", testUser.Login).Return(testUser, nil)
 
-	svs := NewUserService(repo)
+	svs := NewUserServer(repo)
 
 	tests := []struct {
 		name           string

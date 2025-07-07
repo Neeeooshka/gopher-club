@@ -10,18 +10,18 @@ import (
 )
 
 const getWithdrawals = `-- name: GetWithdrawals :many
-select id, user_id, num, date_withdraw, sum from gopher_withdrawals where user_id = $1 order by date_withdraw desc
+SELECT id, user_id, num, date_withdraw, sum FROM withdrawals WHERE user_id = $1 ORDER BY date_withdraw DESC
 `
 
-func (q *Queries) GetWithdrawals(ctx context.Context, userID int) ([]GopherWithdrawal, error) {
+func (q *Queries) GetWithdrawals(ctx context.Context, userID int) ([]Withdrawal, error) {
 	rows, err := q.db.Query(ctx, getWithdrawals, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GopherWithdrawal
+	var items []Withdrawal
 	for rows.Next() {
-		var i GopherWithdrawal
+		var i Withdrawal
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -40,10 +40,10 @@ func (q *Queries) GetWithdrawals(ctx context.Context, userID int) ([]GopherWithd
 }
 
 const getWithdrawn = `-- name: GetWithdrawn :one
-select sum(sum) as withdrawn
-from gopher_withdrawals
-where user_id = $1
-group by user_id
+SELECT SUM(sum) AS withdrawn
+FROM withdrawals
+WHERE user_id = $1
+GROUP BY user_id
 `
 
 func (q *Queries) GetWithdrawn(ctx context.Context, userID int) (float32, error) {
@@ -54,7 +54,7 @@ func (q *Queries) GetWithdrawn(ctx context.Context, userID int) (float32, error)
 }
 
 const withdrawBalance = `-- name: WithdrawBalance :exec
-insert into gopher_withdrawals (user_id, num, sum) values ($1, $2, $3)
+INSERT INTO withdrawals (user_id, num, sum) VALUES ($1, $2, $3)
 `
 
 type WithdrawBalanceParams struct {

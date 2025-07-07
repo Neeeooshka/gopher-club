@@ -11,26 +11,19 @@ type BalanceRepository interface {
 	WithdrawBalance(context.Context, models.Withdraw) error
 }
 
-type BalanceService struct {
-	errors  []error
+type BalanceServer struct {
 	init    bool
 	storage BalanceRepository
 }
 
-func NewBalanceService(repo BalanceRepository) BalanceService {
-
-	var bs BalanceService
-
-	bs.storage = repo
-	bs.init = true
-
-	return bs
+func NewBalanceServer(repo BalanceRepository) BalanceServer {
+	return BalanceServer{storage: repo, init: true}
 }
 
-func (b *BalanceService) HealthCheck() ([]error, bool) {
-	return b.errors, b.init
+func (b *BalanceServer) HealthCheck() bool {
+	return b.init
 }
 
-func (b *BalanceService) GetName() string {
-	return "BalanceService"
+func (b *BalanceServer) GetName() string {
+	return "BalanceServer"
 }

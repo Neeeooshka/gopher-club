@@ -54,7 +54,7 @@ func (ns NullOrderStatus) Value() (driver.Value, error) {
 	return string(ns.OrderStatus), nil
 }
 
-type GopherOrder struct {
+type Order struct {
 	ID         int
 	UserID     int
 	Num        string
@@ -63,21 +63,21 @@ type GopherOrder struct {
 	Status     NullOrderStatus
 }
 
-type GopherUser struct {
+type User struct {
 	ID       int
 	Login    string
 	Password string
 	Balance  float32
 }
 
-type GopherUserParam struct {
+type UserKeyValue struct {
 	ID     int
 	UserID int
 	PName  string
 	PValue string
 }
 
-type GopherWithdrawal struct {
+type Withdrawal struct {
 	ID           int
 	UserID       int
 	Num          string

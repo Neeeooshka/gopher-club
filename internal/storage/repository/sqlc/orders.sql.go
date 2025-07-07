@@ -11,16 +11,16 @@ import (
 )
 
 const addOrder = `-- name: AddOrder :one
-with ins as (
-    insert into gopher_orders (user_id, num) values ($1, $2)
-    on conflict (num) do nothing
-    returning id, user_id, num, date_insert, accrual, status, true as is_new
+WITH ins AS (
+    INSERT INTO orders (user_id, num) VALUES ($1, $2)
+    ON CONFLICT (num) DO NOTHING
+    RETURNING id, user_id, num, date_insert, accrual, status, TRUE AS is_new
 )
 
-select id, user_id, num, date_insert, accrual, status, is_new from ins
-union all
-select id, user_id, num, date_insert, accrual, status, false as is_new from gopher_orders where num = $2
-limit 1
+SELECT id, user_id, num, date_insert, accrual, status, is_new FROM ins
+UNION ALL
+SELECT id, user_id, num, date_insert, accrual, status, FALSE AS is_new FROM orders WHERE num = $2
+LIMIT 1
 `
 
 type AddOrderParams struct {
@@ -54,18 +54,18 @@ func (q *Queries) AddOrder(ctx context.Context, arg AddOrderParams) (AddOrderRow
 }
 
 const listUserOrders = `-- name: ListUserOrders :many
-select id, user_id, num, date_insert, accrual, status from gopher_orders where user_id = $1 order by date_insert desc
+SELECT id, user_id, num, date_insert, accrual, status FROM orders WHERE user_id = $1 ORDER BY date_insert DESC
 `
 
-func (q *Queries) ListUserOrders(ctx context.Context, userID int) ([]GopherOrder, error) {
+func (q *Queries) ListUserOrders(ctx context.Context, userID int) ([]Order, error) {
 	rows, err := q.db.Query(ctx, listUserOrders, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GopherOrder
+	var items []Order
 	for rows.Next() {
-		var i GopherOrder
+		var i Order
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,

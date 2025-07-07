@@ -17,7 +17,7 @@ var (
 )
 
 const updateOrders = `-- name: UpdateOrders :batchexec
-update gopher_orders set status = $1, accrual = $2 where id = $3
+UPDATE orders SET status = $1, accrual = $2 WHERE id = $3
 `
 
 type UpdateOrdersBatchResults struct {

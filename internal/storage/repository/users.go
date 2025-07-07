@@ -1,4 +1,4 @@
-package postgres
+package repository
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
-	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
+	"github.com/Neeeooshka/gopher-club/internal/storage/repository/sqlc"
 	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
 	"github.com/jackc/pgx/v5"
 )

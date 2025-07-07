@@ -15,30 +15,30 @@ func (a *GopherClubApp) InitializeRoutes() {
 	// auth only handlers
 	a.Router.Group(func(r chi.Router) {
 
-		r.Use(a.UserService.AuthMiddleware)
+		r.Use(a.UserServer.AuthMiddleware)
 
-		// OrdersService handlers
+		// OrdersServer handlers
 		r.Group(func(r chi.Router) {
 
-			r.Use(a.HealthCheckMiddleware(&a.OrdersService))
+			r.Use(a.HealthCheckMiddleware(&a.OrdersServer))
 
-			r.Get("/api/user/orders", a.OrdersService.GetUserOrdersHandler)
-			r.Post("/api/user/orders", a.OrdersService.AddUserOrderHandler)
+			r.Get("/api/user/orders", a.OrdersServer.GetUserOrdersHandler)
+			r.Post("/api/user/orders", a.OrdersServer.AddUserOrderHandler)
 		})
 
-		// BalanceService handlers
+		// BalanceServer handlers
 		r.Group(func(r chi.Router) {
 
-			r.Use(a.HealthCheckMiddleware(&a.BalanceService))
+			r.Use(a.HealthCheckMiddleware(&a.BalanceServer))
 
-			r.Get("/api/user/balance", a.BalanceService.GetUserBalanceHandler)
-			r.Get("/api/user/withdrawals", a.BalanceService.GetUserWithdrawalsHandler)
-			r.Post("/api/user/balance/withdraw", a.BalanceService.WithdrawBalanceHandler)
+			r.Get("/api/user/balance", a.BalanceServer.GetUserBalanceHandler)
+			r.Get("/api/user/withdrawals", a.BalanceServer.GetUserWithdrawalsHandler)
+			r.Post("/api/user/balance/withdraw", a.BalanceServer.WithdrawBalanceHandler)
 		})
 	})
 
-	a.Router.Post("/api/user/register", a.UserService.RegisterUserHandler)
-	a.Router.Post("/api/user/login", a.UserService.LoginUserHandler)
+	a.Router.Post("/api/user/register", a.UserServer.RegisterUserHandler)
+	a.Router.Post("/api/user/login", a.UserServer.LoginUserHandler)
 }
 
 func (a *GopherClubApp) getMiddlewares() []func(http.Handler) http.Handler {
@@ -50,8 +50,8 @@ func (a *GopherClubApp) getMiddlewares() []func(http.Handler) http.Handler {
 		middlewares = append(middlewares, a.logger.Middleware)
 	}
 
-	// HealthChecker UserService for all requests
-	middlewares = append(middlewares, a.HealthCheckMiddleware(&a.UserService))
+	// HealthChecker UserServer for all requests
+	middlewares = append(middlewares, a.HealthCheckMiddleware(&a.UserServer))
 
 	if a.compressor != nil {
 		// compressor reader

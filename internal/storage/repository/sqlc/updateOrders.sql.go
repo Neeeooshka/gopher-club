@@ -10,18 +10,18 @@ import (
 )
 
 const listWaitingOrders = `-- name: ListWaitingOrders :many
-select id, user_id, num, date_insert, accrual, status from gopher_orders where status not in ('INVALID', 'PROCESSED')
+SELECT id, user_id, num, date_insert, accrual, status FROM orders WHERE status NOT IN ('INVALID', 'PROCESSED')
 `
 
-func (q *Queries) ListWaitingOrders(ctx context.Context) ([]GopherOrder, error) {
+func (q *Queries) ListWaitingOrders(ctx context.Context) ([]Order, error) {
 	rows, err := q.db.Query(ctx, listWaitingOrders)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GopherOrder
+	var items []Order
 	for rows.Next() {
-		var i GopherOrder
+		var i Order
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,

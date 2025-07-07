@@ -6,11 +6,12 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
+	"github.com/Neeeooshka/gopher-club/pkg/utils"
 	"io"
 	"net/http"
 )
 
-func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Request) {
+func (o *OrdersServer) AddUserOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(models.UserContextKey).(models.User)
 	if !ok {
@@ -30,20 +31,20 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 	}()
 
 	orderNumber := string(body)
-	if !CheckLuhn(orderNumber) {
+	if !utils.CheckLuhn(orderNumber) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
 	order, err := o.storage.AddOrder(r.Context(), orderNumber, user.ID)
-	var cue *storage.ConflictOrderError
-	var coue *storage.ConflictOrderUserError
+	var conflictOrderError *storage.ConflictOrderError
+	var conflictOrderUserError *storage.ConflictOrderUserError
 	if err != nil {
-		if errors.As(err, &cue) {
+		if errors.As(err, &conflictOrderError) {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		if errors.As(err, &coue) {
+		if errors.As(err, &conflictOrderUserError) {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
@@ -56,7 +57,7 @@ func (o *OrdersService) AddUserOrderHandler(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (o *OrdersService) GetUserOrdersHandler(w http.ResponseWriter, r *http.Request) {
+func (o *OrdersServer) GetUserOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(models.UserContextKey).(models.User)
 	if !ok {

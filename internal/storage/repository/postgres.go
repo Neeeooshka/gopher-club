@@ -1,4 +1,4 @@
-package postgres
+package repository
 
 import (
 	"context"
@@ -7,12 +7,12 @@ import (
 	"io/fs"
 	"time"
 
-	"github.com/Neeeooshka/gopher-club/internal/storage/postgres/sqlc"
+	"github.com/Neeeooshka/gopher-club/internal/storage/repository/sqlc"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/tern/v2/migrate"
 )
 
-const versionTable = "gophermart_schema_versions"
+const versionTable = "schema_versions"
 
 //go:embed migrations/*.sql
 var migrationFiles embed.FS
