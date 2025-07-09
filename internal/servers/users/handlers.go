@@ -3,9 +3,10 @@ package users
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
-	"net/http"
 )
 
 func (u *UserServer) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {

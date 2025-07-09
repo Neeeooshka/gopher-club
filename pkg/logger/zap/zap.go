@@ -2,6 +2,7 @@ package zap
 
 import (
 	"github.com/Neeeooshka/gopher-club/pkg/logger"
+
 	"go.uber.org/zap"
 )
 

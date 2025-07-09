@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Neeeooshka/gopher-club/internal/storage/repository/sqlc"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/tern/v2/migrate"
 )

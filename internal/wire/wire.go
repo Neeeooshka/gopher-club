@@ -5,6 +5,7 @@ package wire
 
 import (
 	"github.com/Neeeooshka/gopher-club/internal/app"
+
 	"github.com/google/wire"
 )
 

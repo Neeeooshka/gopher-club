@@ -2,11 +2,12 @@ package balance
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/Neeeooshka/gopher-club/internal/dto"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"github.com/Neeeooshka/gopher-club/pkg/utils"
-	"net/http"
 )
 
 func (b *BalanceServer) WithdrawBalanceHandler(w http.ResponseWriter, r *http.Request) {

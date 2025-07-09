@@ -10,6 +10,7 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
+
 	"resty.dev/v3"
 )
 

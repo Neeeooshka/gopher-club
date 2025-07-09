@@ -2,6 +2,7 @@ package balance
 
 import (
 	"context"
+
 	"github.com/Neeeooshka/gopher-club/internal/models"
 )
 

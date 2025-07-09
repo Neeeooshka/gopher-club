@@ -8,6 +8,7 @@ import (
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage/repository/sqlc"
 	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
+
 	"github.com/jackc/pgx/v5"
 )
 

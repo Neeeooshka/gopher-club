@@ -3,9 +3,10 @@ package orders
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/Neeeooshka/gopher-club/internal/config"
 	"github.com/Neeeooshka/gopher-club/internal/models"
-	"time"
 )
 
 type OrdersRepository interface {

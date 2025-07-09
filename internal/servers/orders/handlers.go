@@ -2,13 +2,14 @@ package orders
 
 import (
 	"errors"
+	"io"
+	"net/http"
+
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/pkg/httputil"
 	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
 	"github.com/Neeeooshka/gopher-club/pkg/utils"
-	"io"
-	"net/http"
 )
 
 func (o *OrdersServer) AddUserOrderHandler(w http.ResponseWriter, r *http.Request) {
