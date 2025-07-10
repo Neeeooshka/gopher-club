@@ -11,16 +11,9 @@ import (
 )
 
 const addOrder = `-- name: AddOrder :one
-WITH ins AS (
-    INSERT INTO orders (user_id, num) VALUES ($1, $2)
-    ON CONFLICT (num) DO NOTHING
-    RETURNING id, user_id, num, date_insert, accrual, status, TRUE AS is_new
-)
-
-SELECT id, user_id, num, date_insert, accrual, status, is_new FROM ins
-UNION ALL
-SELECT id, user_id, num, date_insert, accrual, status, FALSE AS is_new FROM orders WHERE num = $2
-LIMIT 1
+INSERT INTO orders (user_id, num) VALUES ($1, $2)
+ON CONFLICT (num) DO UPDATE SET num = EXCLUDED.num
+RETURNING id, user_id, num, date_insert, accrual, status, (xmax = 0) AS is_new
 `
 
 type AddOrderParams struct {

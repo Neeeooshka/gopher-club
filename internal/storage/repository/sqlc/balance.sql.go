@@ -40,10 +40,7 @@ func (q *Queries) GetWithdrawals(ctx context.Context, userID int) ([]Withdrawal,
 }
 
 const getWithdrawn = `-- name: GetWithdrawn :one
-SELECT SUM(sum) AS withdrawn
-FROM withdrawals
-WHERE user_id = $1
-GROUP BY user_id
+SELECT SUM(sum) AS withdrawn FROM withdrawals WHERE user_id = $1 GROUP BY user_id
 `
 
 func (q *Queries) GetWithdrawn(ctx context.Context, userID int) (float32, error) {

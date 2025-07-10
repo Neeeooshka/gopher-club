@@ -10,9 +10,7 @@ import (
 )
 
 const addCredentials = `-- name: AddCredentials :exec
-INSERT INTO user_key_value (user_id, p_name, p_value) VALUES (
-    $1, 'credentials', $2
-)
+INSERT INTO user_key_value (user_id, p_name, p_value) VALUES ($1, 'credentials', $2)
 `
 
 type AddCredentialsParams struct {
@@ -26,16 +24,9 @@ func (q *Queries) AddCredentials(ctx context.Context, arg AddCredentialsParams) 
 }
 
 const addUser = `-- name: AddUser :one
-WITH ins AS (
-    INSERT INTO users (login, password) VALUES ($1, $2)
-    ON CONFLICT (login) DO NOTHING
-    RETURNING id
-)
-
-SELECT id, TRUE AS is_new FROM ins
-UNION ALL
-SELECT id, FALSE AS is_new FROM users WHERE login = $1
-LIMIT 1
+INSERT INTO users (login, password) VALUES ($1, $2)
+ON CONFLICT (login) DO UPDATE SET login = EXCLUDED.login
+RETURNING id, (xmax = 0) AS is_new
 `
 
 type AddUserParams struct {
@@ -57,7 +48,7 @@ func (q *Queries) AddUser(ctx context.Context, arg AddUserParams) (AddUserRow, e
 
 const getUserByLogin = `-- name: GetUserByLogin :one
 SELECT u.id, u.login, u.password, u.balance, up.p_value AS credentials FROM users u
-    JOIN user_key_value up ON up.user_id = u.id AND p_name = 'credentials'
+JOIN user_key_value up ON up.user_id = u.id AND p_name = 'credentials'
 WHERE u.login = $1
 LIMIT 1
 `
