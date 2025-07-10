@@ -3,6 +3,8 @@ package users
 import (
 	"encoding/json"
 	"errors"
+	"github.com/Neeeooshka/gopher-club/internal/dto"
+	"github.com/go-playground/validator/v10"
 	"net/http"
 
 	"github.com/Neeeooshka/gopher-club/internal/models"
@@ -11,29 +13,24 @@ import (
 
 func (u *UserServer) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 
-	var cr credentials
+	var auth dto.AuthData
 
-	if err := json.NewDecoder(r.Body).Decode(&cr); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if !cr.validate() {
+	if err := validator.New().Struct(auth); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
-	}
-
-	password, salt, err := cr.createPassword()
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	user := models.User{
-		Login:    cr.Login,
-		Password: password,
+		Login:    auth.Login,
+		Password: auth.Password,
 	}
 
-	err = u.storage.AddUser(r.Context(), user, salt)
+	err := u.storage.AddUser(r.Context(), user)
 	var ce *storage.ConflictUserError
 	if err != nil {
 		if errors.As(err, &ce) {
@@ -44,7 +41,7 @@ func (u *UserServer) RegisterUserHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	token, err := u.Authorize(cr)
+	token, err := u.Authorize(auth)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -57,19 +54,19 @@ func (u *UserServer) RegisterUserHandler(w http.ResponseWriter, r *http.Request)
 
 func (u *UserServer) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 
-	var cr credentials
+	var auth dto.AuthData
 
-	if err := json.NewDecoder(r.Body).Decode(&cr); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&auth); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if !cr.validate() {
+	if err := validator.New().Struct(auth); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	token, err := u.Authorize(cr)
+	token, err := u.Authorize(auth)
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)

@@ -70,13 +70,6 @@ type User struct {
 	Balance  float32
 }
 
-type UserKeyValue struct {
-	ID     int
-	UserID int
-	PName  string
-	PValue string
-}
-
 type Withdrawal struct {
 	ID           int
 	UserID       int

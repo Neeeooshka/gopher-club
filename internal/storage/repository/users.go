@@ -2,15 +2,11 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Neeeooshka/gopher-club/internal/models"
 	"github.com/Neeeooshka/gopher-club/internal/storage"
 	"github.com/Neeeooshka/gopher-club/internal/storage/repository/sqlc"
-	"github.com/Neeeooshka/gopher-club/pkg/logger/zap"
-
-	"github.com/jackc/pgx/v5"
 )
 
 func (s *Postgres) GetUserByLogin(login string) (models.User, error) {
@@ -26,32 +22,37 @@ func (s *Postgres) GetUserByLogin(login string) (models.User, error) {
 	user.Login = u.Login
 	user.Password = u.Password
 	user.Balance = u.Balance
-	user.Credentials = u.Credentials
 
 	return user, nil
 }
 
-func (s *Postgres) AddUser(ctx context.Context, user models.User, salt string) error {
+func (s *Postgres) AuthUser(user *models.User) error {
 
-	tx, err := s.DB.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("could not start transaction: %w", err)
+	authUserParam := sqlc.AuthUserParams{
+		Login: user.Login,
+		Crypt: user.Password,
 	}
 
-	defer func() {
-		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			zap.Log.Debug("failed to rollback transaction", zap.Log.Error(err))
-		}
-	}()
+	u, err := s.sqlc.AuthUser(context.Background(), authUserParam)
+	if err != nil {
+		return err
+	}
 
-	qtx := s.sqlc.WithTx(tx)
+	user.ID = u.ID
+	user.Password = u.Password
+	user.Balance = u.Balance
+
+	return nil
+}
+
+func (s *Postgres) AddUser(ctx context.Context, user models.User) error {
 
 	u := sqlc.AddUserParams{
-		Login:    user.Login,
-		Password: user.Password,
+		Login: user.Login,
+		Crypt: user.Password,
 	}
 
-	result, err := qtx.AddUser(ctx, u)
+	result, err := s.sqlc.AddUser(ctx, u)
 	if err != nil {
 		return fmt.Errorf("could not add user: %w", err)
 	}
@@ -60,15 +61,5 @@ func (s *Postgres) AddUser(ctx context.Context, user models.User, salt string) e
 		return storage.NewConflictUserError(result.ID, u.Login)
 	}
 
-	c := sqlc.AddCredentialsParams{
-		UserID: result.ID,
-		PValue: salt,
-	}
-
-	err = qtx.AddCredentials(ctx, c)
-	if err != nil {
-		return fmt.Errorf("could not add credentials: %w", err)
-	}
-
-	return tx.Commit(ctx)
+	return nil
 }

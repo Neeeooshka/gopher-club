@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"fmt"
+	"github.com/Neeeooshka/gopher-club/internal/dto"
 	"net/http"
 	"strings"
 
@@ -10,8 +11,9 @@ import (
 )
 
 type UserRepository interface {
-	AddUser(context.Context, models.User, string) error
+	AddUser(context.Context, models.User) error
 	GetUserByLogin(string) (models.User, error)
+	AuthUser(*models.User) error
 }
 
 type UserServer struct {
@@ -59,15 +61,14 @@ func (u *UserServer) Authenticate(jwtToken string) (models.User, error) {
 	return user, nil
 }
 
-func (u *UserServer) Authorize(cr credentials) (string, error) {
+func (u *UserServer) Authorize(auth dto.AuthData) (string, error) {
 
-	user, err := u.storage.GetUserByLogin(cr.Login)
-	if err != nil {
-		return "", fmt.Errorf("error authorization: %w", err)
+	user := models.User{
+		Login:    auth.Login,
+		Password: auth.Password,
 	}
 
-	err = cr.verifyPassword(user)
-	if err != nil {
+	if err := u.storage.AuthUser(&user); err != nil {
 		return "", fmt.Errorf("error authorization: %w", err)
 	}
 

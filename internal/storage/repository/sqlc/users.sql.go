@@ -9,29 +9,15 @@ import (
 	"context"
 )
 
-const addCredentials = `-- name: AddCredentials :exec
-INSERT INTO user_key_value (user_id, p_name, p_value) VALUES ($1, 'credentials', $2)
-`
-
-type AddCredentialsParams struct {
-	UserID int
-	PValue string
-}
-
-func (q *Queries) AddCredentials(ctx context.Context, arg AddCredentialsParams) error {
-	_, err := q.db.Exec(ctx, addCredentials, arg.UserID, arg.PValue)
-	return err
-}
-
 const addUser = `-- name: AddUser :one
-INSERT INTO users (login, password) VALUES ($1, $2)
+INSERT INTO users (login, password) VALUES ($1, crypt($2, gen_salt('des')))
 ON CONFLICT (login) DO UPDATE SET login = EXCLUDED.login
 RETURNING id, (xmax = 0) AS is_new
 `
 
 type AddUserParams struct {
-	Login    string
-	Password string
+	Login string
+	Crypt string
 }
 
 type AddUserRow struct {
@@ -40,36 +26,45 @@ type AddUserRow struct {
 }
 
 func (q *Queries) AddUser(ctx context.Context, arg AddUserParams) (AddUserRow, error) {
-	row := q.db.QueryRow(ctx, addUser, arg.Login, arg.Password)
+	row := q.db.QueryRow(ctx, addUser, arg.Login, arg.Crypt)
 	var i AddUserRow
 	err := row.Scan(&i.ID, &i.IsNew)
 	return i, err
 }
 
-const getUserByLogin = `-- name: GetUserByLogin :one
-SELECT u.id, u.login, u.password, u.balance, up.p_value AS credentials FROM users u
-JOIN user_key_value up ON up.user_id = u.id AND p_name = 'credentials'
-WHERE u.login = $1
-LIMIT 1
+const authUser = `-- name: AuthUser :one
+SELECT id, login, password, balance FROM users u WHERE u.login = $1 AND password = crypt($2, password) LIMIT 1
 `
 
-type GetUserByLoginRow struct {
-	ID          int
-	Login       string
-	Password    string
-	Balance     float32
-	Credentials string
+type AuthUserParams struct {
+	Login string
+	Crypt string
 }
 
-func (q *Queries) GetUserByLogin(ctx context.Context, login string) (GetUserByLoginRow, error) {
-	row := q.db.QueryRow(ctx, getUserByLogin, login)
-	var i GetUserByLoginRow
+func (q *Queries) AuthUser(ctx context.Context, arg AuthUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, authUser, arg.Login, arg.Crypt)
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Login,
 		&i.Password,
 		&i.Balance,
-		&i.Credentials,
+	)
+	return i, err
+}
+
+const getUserByLogin = `-- name: GetUserByLogin :one
+SELECT id, login, password, balance FROM users u WHERE u.login = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByLogin(ctx context.Context, login string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByLogin, login)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Login,
+		&i.Password,
+		&i.Balance,
 	)
 	return i, err
 }
